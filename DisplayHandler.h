@@ -23,10 +23,7 @@
     #define WHITE 0xFFFF
   #endif
   
-  void turnOffBackLight();
-  void turnOnBackLight();
   void clearDisplay(uint16_t color);
-  void displayDisplay();
   void initDisplay();
   void setDisplayText(String text, uint16_t textColor, uint16_t backgroundColor, int textSize = 2, int x = 0, int y = 0);
   void displayQrCode(String string, int pixelsize = 2 , int sidepadding = 10);
