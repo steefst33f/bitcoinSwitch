@@ -3,24 +3,28 @@
 #include <FS.h>
 #include <SPIFFS.h>
 #include <SPI.h>
-#include <TFT_eSPI.h>
 #include <Wire.h>
-using WebServerClass = WebServer;
-fs::SPIFFSFS &FlashFS = SPIFFS;
-#define FORMAT_ON_FAIL true
-#include <JC_Button.h>
-#include "qrcoded.h"
+
+#include "DisplayHandler.h"
+
+#ifdef M5STACK
+  #include <JC_Button.h>
+#endif
 
 #include <AutoConnect.h>
 #include <ArduinoJson.h>
 
 #define PARAM_FILE "/elements.json"
 
+using WebServerClass = WebServer;
+fs::SPIFFSFS &FlashFS = SPIFFS;
+#define FORMAT_ON_FAIL true
+
 /////////////////////////////////
 ///////////CHANGE////////////////
 /////////////////////////////////
 
-bool usingM5 = true; // false if not using M5Stack          
+/* comment out #define M5STACK in DisplayHelpers.h if you don't use the M5Stack */        
 bool format = false; // true for formatting SPIFFS, use once, then make false and reflash
 int portalPin = 4;
 
@@ -40,6 +44,7 @@ String dataId;
 String description;
 String payReq;
 
+// variables
 int balance;
 int oldBalance;
 
@@ -163,47 +168,47 @@ static const char PAGE_SAVE[] PROGMEM = R"(
 }
 )";
 
-TFT_eSPI tft = TFT_eSPI();
-
+// instances
 WebServerClass server;
 AutoConnect portal(server);
 AutoConnectConfig config;
 AutoConnectAux elementsAux;
 AutoConnectAux saveAux;
 
+// setup
+
 void setup()
 {
   Serial.begin(115200);
   Wire.begin();
-  if(usingM5 == true){
-    tft.init();
-    tft.setRotation(1);
-    tft.invertDisplay(true);
-    logoScreen();
-  }
-  const byte BUTTON_PIN_A = 39;
-  Button BTNA(BUTTON_PIN_A);
-  BTNA.begin();
+  initDisplay();
+  logoScreen();
+
+  #ifdef M5STACK
+    const byte BUTTON_PIN_A = 39;
+    Button BTNA(BUTTON_PIN_A);
+    BTNA.begin();
+    pinMode (2, OUTPUT);
+  #endif
+
   int timer = 0;
-  pinMode (2, OUTPUT);
   while (timer < 2000)
   {
     digitalWrite(2, LOW);
-    if (usingM5 == true){
+    #ifdef M5STACK
       if (BTNA.read() == 1){
         Serial.println("Launch portal");
         triggerAp = true;
         timer = 5000;
       }
-    }
-    else{
+    #else
       Serial.println(touchRead(portalPin));
       if(touchRead(portalPin) < 60){
         Serial.println("Launch portal");
         triggerAp = true;
         timer = 5000;
       }
-    }
+    #endif
     digitalWrite(2, HIGH);
     timer = timer + 100;
     delay(300);
@@ -340,11 +345,11 @@ void setup()
   digitalWrite(highPin.toInt(), LOW);
 }
 
+// loop
+
 void loop() {
   while(WiFi.status() != WL_CONNECTED){
-    if(usingM5 == true){
-      connectionError();
-    }
+    connectionError();
     Serial.println("Failed to connect");
     delay(500);
   }
@@ -352,9 +357,7 @@ void loop() {
   Serial.println(timePin.toInt());
   Serial.println(lnurlP.substring(0, 5));
   if(lnurlP.substring(0, 5) == "LNURL"){
-    if(usingM5 == true){
-      qrdisplayScreen();
-    }
+    qrdisplayScreen();
     checkBalance();
     oldBalance = balance;
     while((oldBalance + amount.toInt()) > balance){
@@ -362,10 +365,7 @@ void loop() {
       delay(2000);
     }
     oldBalance = balance;
-    Serial.println("Paid");
-    if(usingM5 == true){
-      paidScreen();
-    }
+    paidScreen();
     digitalWrite(highPin.toInt(), HIGH);
     delay(timePin.toInt());
     digitalWrite(highPin.toInt(), LOW); 
@@ -380,18 +380,13 @@ void loop() {
       delay(5000);
     }
     if(payReq != ""){
-      if(usingM5 == true){
-        qrdisplayScreen();
-      }
+      qrdisplayScreen();
       delay(5000);
     }
     while(paid == false && payReq != ""){
       checkInvoice();
       if(paid){
-        Serial.println("Paid");
-        if(usingM5 == true){
-          completeScreen();
-        }
+        completeScreen();
         digitalWrite(highPin.toInt(), HIGH);
         delay(timePin.toInt());
         digitalWrite(highPin.toInt(), LOW); 
@@ -409,101 +404,68 @@ void loop() {
 
 void serverError()
 {
-  tft.fillScreen(TFT_WHITE);
-  tft.setCursor(0, 80);
-  tft.setTextSize(3);
-  tft.setTextColor(TFT_RED);
-  tft.println("Server connect fail");
+  setDisplayText("Server connect fail", WHITE, RED, 3, 0, 80);
+  Serial.println("Server connect fail");
 }
 
 void connectionError()
 {
-  tft.fillScreen(TFT_WHITE);
-  tft.setCursor(0, 80);
-  tft.setTextSize(3);
-  tft.setTextColor(TFT_RED);
-  tft.println("Wifi connect fail");
+  setDisplayText("Wifi connect fail", WHITE, RED, 3, 0, 80);
+  Serial.println("Wifi connect fail");
 }
 
 void connection()
 {
-  tft.fillScreen(TFT_WHITE);
-  tft.setCursor(0, 80);
-  tft.setTextSize(3);
-  tft.setTextColor(TFT_RED);
-  tft.println("Wifi connected");
+  setDisplayText("Wifi connected", WHITE, RED, 3, 0, 80);
+  Serial.println("Wifi connected");
 }
 
 void logoScreen()
 { 
-  tft.fillScreen(TFT_WHITE);
-  tft.setCursor(0, 80);
-  tft.setTextSize(4);
-  tft.setTextColor(TFT_PURPLE);
-  tft.println("bitcoinSwitch");
+  setDisplayText("bitcoinSwitch", WHITE, PURPLE, 4, 0, 80);
+  Serial.println("bitcoinSwitch");
 }
 
 void portalLaunched()
 { 
-  tft.fillScreen(TFT_WHITE);
-  tft.setCursor(0, 80);
-  tft.setTextSize(4);
-  tft.setTextColor(TFT_PURPLE);
-  tft.println("PORTAL LAUNCH");
+  setDisplayText("PORTAL LAUNCH", WHITE, PURPLE, 4, 0, 80);
+  Serial.println("PORTAL LAUNCH");
 }
 
 void processingScreen()
 { 
-  tft.fillScreen(TFT_BLACK);
-  tft.setCursor(40, 80);
-  tft.setTextSize(4);
-  tft.setTextColor(TFT_WHITE);
-  tft.println("PROCESSING");
+  setDisplayText("PROCESSING", BLACK, RED, 4, 40, 80);
+  Serial.println("PROCESSING");
 }
 
 void lnbitsScreen()
 { 
-  tft.fillScreen(TFT_WHITE);
-  tft.setCursor(10, 90);
-  tft.setTextSize(3);
-  tft.setTextColor(TFT_BLACK);
-  tft.println("POWERED BY LNBITS");
+  setDisplayText("POWERED BY LNBITS", WHITE, BLACK, 3, 10, 90);
+  Serial.println("POWERED BY LNBITS");
 }
 
 void portalScreen()
 { 
-  tft.fillScreen(TFT_BLACK);
-  tft.setCursor(30, 80);
-  tft.setTextSize(3);
-  tft.setTextColor(TFT_WHITE);
-  tft.println("PORTAL LAUNCHED");
+  setDisplayText("PORTAL LAUNCHED", BLACK, WHITE, 3, 30, 80);
+  Serial.println("PORTAL LAUNCHED");
 }
 
 void paidScreen()
 { 
-  tft.fillScreen(TFT_BLACK);
-  tft.setCursor(110, 80);
-  tft.setTextSize(4);
-  tft.setTextColor(TFT_WHITE);
-  tft.println("PAID");
+  setDisplayText("PAID", WHITE, RED, 4, 110, 80);
+  Serial.println("PAID");
 }
 
 void completeScreen()
 { 
-  tft.fillScreen(TFT_BLACK);
-  tft.setCursor(60, 80);
-  tft.setTextSize(4);
-  tft.setTextColor(TFT_WHITE);
-  tft.println("COMPLETE");
+  setDisplayText("COMPLETE", BLACK, WHITE, 4, 60, 80);
+  Serial.println("COMPLETE");
 }
 
 void errorScreen()
 { 
-  tft.fillScreen(TFT_BLACK);
-  tft.setCursor(70, 80);
-  tft.setTextSize(4);
-  tft.setTextColor(TFT_WHITE);
-  tft.println("ERROR");
+  setDisplayText("ERROR", BLACK, WHITE, 4, 70, 80);
+  Serial.println("ERROR");
 }
 
 void qrdisplayScreen()
@@ -515,27 +477,9 @@ void qrdisplayScreen()
   else{
     qrCodeData = payReq;
   }
-  tft.fillScreen(TFT_WHITE);
-  qrCodeData.toUpperCase();
-  const char *qrDataChar = qrCodeData.c_str();
-  QRCode qrcoded;
-  uint8_t qrcodeData[qrcode_getBufferSize(20)];
-  qrcode_initText(&qrcoded, qrcodeData, 11, 0, qrDataChar);
-  for (uint8_t y = 0; y < qrcoded.size; y++)
-  {
-    // Each horizontal module
-    for (uint8_t x = 0; x < qrcoded.size; x++)
-    {
-      if (qrcode_getModule(&qrcoded, x, y))
-      {
-        tft.fillRect(65 + 3 * x, 20 + 3 * y, 3, 3, TFT_BLACK);
-      }
-      else
-      {
-        tft.fillRect(65 + 3 * x, 20 + 3 * y, 3, 3, TFT_WHITE);
-      }
-    }
-  }
+  
+  displayQrCode(qrCodeData);
+  Serial.println("QRCode..");
 }
 
 //////////////////NODE CALLS///////////////////
