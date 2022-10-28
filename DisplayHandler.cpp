@@ -1,7 +1,7 @@
 #include "DisplayHandler.h"
 #include "qrcoded.h"
 
-#ifdef M5STACK
+#ifdef TFT_DISPLAY
   #include <TFT_eSPI.h>
   
   TFT_eSPI ttf = TFT_eSPI();
@@ -15,14 +15,14 @@
 
 void clearDisplay(uint16_t color) 
 {
-  #ifdef M5STACK
+  #ifdef TFT_DISPLAY
     ttf.fillScreen(color);
   #endif
 }
 
 void initDisplay() 
 {
-  #ifdef M5STACK
+  #ifdef TFT_DISPLAY
     ttf.init();
     ttf.setRotation(1);
     ttf.fillScreen(BLACK);
@@ -32,7 +32,7 @@ void initDisplay()
 }
 
 void setDisplayText(String text, uint16_t textColor, uint16_t backgroundColor, int textSize /* = 3*/, int x /* = 0*/, int y /* = 0*/) {
-  #ifdef M5STACK
+  #ifdef TFT_DISPLAY
     clearDisplay(backgroundColor);
     ttf.setCursor(x, y);
     ttf.setTextSize(textSize);
@@ -45,7 +45,7 @@ void setDisplayText(String text, uint16_t textColor, uint16_t backgroundColor, i
 
 void displayQrCode(String string, int pixelsize /* = 2 */, int sidepadding /* = 10 */) 
 {
-  #ifdef M5STACK
+  #ifdef TFT_DISPLAY
     clearDisplay(qrScreenBgColour);
   
     int pixelSize;
@@ -79,8 +79,8 @@ void displayQrCode(String string, int pixelsize /* = 2 */, int sidepadding /* = 
 
 void debugDisplayText(String text) 
 {
-  #ifdef M5STACK
-    #if DEBUG == 1
+  #if DEBUG == 1
+    #ifdef TFT_DISPLAY
       setDisplayText(text, GREEN, BLACK);
     #endif
   #endif

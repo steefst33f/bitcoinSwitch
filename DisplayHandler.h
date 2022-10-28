@@ -5,11 +5,16 @@
 #ifndef DisplayHandler_h
   #define DisplayHandler_h
   
-//  #define M5STACK // comment out if not using M5Stack 
+  //  #define M5STACK // comment out if not using M5Stack
+  #define TTGO // comment out if not using TTGO
 
-  #ifdef M5STACK
+  #if defined(M5STACK) || defined(TTGO)
+    #define TFT_DISPLAY
+  #endif
+  
+  #ifdef TFT_DISPLAY
     #include <TFT_eSPI.h>
-    
+
     #define BLACK TFT_BLACK
     #define WHITE TFT_WHITE
     #define RED TFT_RED

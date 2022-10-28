@@ -7,6 +7,7 @@
 
 #include "UriComponents.h"
 #include "DisplayHandler.h"
+#include "Screens.h"
 
 #ifdef M5STACK
   #include <JC_Button.h>
@@ -407,7 +408,9 @@ void loop() {
   while(WiFi.status() != WL_CONNECTED){
     connectionError();
     Serial.println("Failed to connect");
-    delay(500);
+    digitalWrite(highPin.toInt(), LOW);
+    printSwitchPinStatus();
+    delay(5000);
   }
 
   debugSerialPrintln("switchPin = " + highPin);
@@ -418,7 +421,7 @@ void loop() {
   
   if(lnurlP.substring(0, 5) == "LNURL") {
     debugSerialPrintln("lnurlP.substring(0, 5) == \"LNURL\"");
-    qrdisplayScreen();
+    qrdisplayScreen(lnurlP);
     checkBalance();
     oldBalance = balance;
     isScanningForNfcTag = true;
@@ -452,7 +455,7 @@ void loop() {
     }
 
     if(payReq != "") {
-      qrdisplayScreen();
+      qrdisplayScreen(payReq);
       delay(5000);
     }
 
@@ -465,12 +468,12 @@ void loop() {
         digitalWrite(highPin.toInt(), LOW); 
         printSwitchPinStatus();
       }
-      delay(4000);
+      delay(2000);
     }
     payReq = "";
     dataId = "";
     paid = false;
-    delay(1000);
+    delay(4000);
   }
 }
 
@@ -490,7 +493,7 @@ void scanForNfcTagWithLNURL() {
       // If you have more than 1 Message then it wil cycle through them
       int recordCount = message.getRecordCount();
       for (int i = 0; i < recordCount; i++) {
-        // debugSerialPrintln("\nNDEF Record " + String(i+1));
+        debugSerialPrintln("\nNDEF Record " + String(i+1));
         NdefRecord record = message.getRecord(i);
 
         int payloadLength = record.getPayloadLength();
@@ -498,8 +501,8 @@ void scanForNfcTagWithLNURL() {
         record.getPayload(payload);
         String string = convertToStringFromBytes(payload, payloadLength);
         
-        // debugSerialPrintln("Payload Length = " + String(payloadLength));
-        // debugSerialPrintln("  Information (as String): " + string);
+        debugSerialPrintln("Payload Length = " + String(payloadLength));
+        debugSerialPrintln("  Information (as String): " + string);
 
         String lnUrl = getLNURL(string);
 
@@ -582,88 +585,6 @@ void scanForNfcTagWithLNURL() {
       }
     }
   }
-}
-
-//////////////////DISPLAY///////////////////
-
-void serverError()
-{
-  setDisplayText("Server connect fail", WHITE, RED, 3, 0, 80);
-  Serial.println("Server connect fail");
-}
-
-void connectionError()
-{
-  setDisplayText("Wifi connect fail", WHITE, RED, 3, 0, 80);
-  Serial.println("Wifi connect fail");
-}
-
-void connection()
-{
-  setDisplayText("Wifi connected", WHITE, RED, 3, 0, 80);
-  Serial.println("Wifi connected");
-}
-
-void logoScreen()
-{ 
-  setDisplayText("bitcoinSwitch", WHITE, PURPLE, 4, 0, 80);
-  Serial.println("bitcoinSwitch");
-}
-
-void portalLaunched()
-{ 
-  setDisplayText("PORTAL LAUNCH", WHITE, PURPLE, 4, 0, 80);
-  Serial.println("PORTAL LAUNCH");
-}
-
-void processingScreen()
-{ 
-  setDisplayText("PROCESSING", BLACK, RED, 4, 40, 80);
-  Serial.println("PROCESSING");
-}
-
-void lnbitsScreen()
-{ 
-  setDisplayText("POWERED BY LNBITS", WHITE, BLACK, 3, 10, 90);
-  Serial.println("POWERED BY LNBITS");
-}
-
-void portalScreen()
-{ 
-  setDisplayText("PORTAL LAUNCHED", BLACK, WHITE, 3, 30, 80);
-  Serial.println("PORTAL LAUNCHED");
-}
-
-void paidScreen()
-{ 
-  setDisplayText("PAID", WHITE, RED, 4, 110, 80);
-  Serial.println("PAID");
-}
-
-void completeScreen()
-{ 
-  setDisplayText("COMPLETE", BLACK, WHITE, 4, 60, 80);
-  Serial.println("COMPLETE");
-}
-
-void errorScreen()
-{ 
-  setDisplayText("ERROR", BLACK, WHITE, 4, 70, 80);
-  Serial.println("ERROR");
-}
-
-void qrdisplayScreen()
-{
-  String qrCodeData;
-  if(lnurlP.substring(0, 5) == "LNURL"){
-    qrCodeData = lnurlP;
-  }
-  else{
-    qrCodeData = payReq;
-  }
-  
-  displayQrCode(qrCodeData);
-  Serial.println("QRCode..");
 }
 
 //////////////////NODE CALLS///////////////////
