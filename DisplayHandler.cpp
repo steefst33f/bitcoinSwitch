@@ -13,21 +13,18 @@
 ///        Functions        ///
 //////////////////////////////
 
-void clearDisplay(uint16_t color) 
-{
+void clearDisplay(uint16_t color){
   #ifdef TFT_DISPLAY
     ttf.fillScreen(color);
   #endif
 }
 
-void initDisplay() 
-{
+void initDisplay() {
   #ifdef TFT_DISPLAY
     ttf.init();
     ttf.setRotation(1);
     ttf.fillScreen(BLACK);
     ttf.invertDisplay(true);
-    Serial.println("initDisplay() (for M5STACK)");
   #endif
 }
 
@@ -39,20 +36,13 @@ void setDisplayText(String text, uint16_t textColor, uint16_t backgroundColor, i
     ttf.setTextColor(textColor);
     ttf.setTextWrap(true);
     ttf.println(text);
-    Serial.println(text);
   #endif
+  Serial.println(text);
 }
 
-void displayQrCode(String string, int pixelsize /* = 2 */, int sidepadding /* = 10 */) 
-{
+void displayQrCode(String string, int pixelSize /* = 2 */, int sidePadding /* = 10 */) {
   #ifdef TFT_DISPLAY
     clearDisplay(qrScreenBgColour);
-  
-    int pixelSize;
-    int sidePadding;
-    
-    pixelSize = 2;
-    sidePadding = 10;
     
     String qrCodeData;
     qrCodeData = string;
@@ -77,11 +67,18 @@ void displayQrCode(String string, int pixelsize /* = 2 */, int sidepadding /* = 
    #endif
 }
 
-void debugDisplayText(String text) 
-{
+void setDisplayErrorText(String text) {
+  #if defined(M5STACK)
+      setDisplayText(text, RED, WHITE, 3, 0, 80);
+  #elif defined(TTGO)
+      setDisplayText(text, RED, WHITE, 2, 0, 70);
+  #endif 
+}
+
+void debugDisplayText(String text) {
   #if DEBUG == 1
     #ifdef TFT_DISPLAY
-      setDisplayText(text, GREEN, BLACK);
+      setDisplayText(text, BLACK, GREEN);
     #endif
   #endif
 }

@@ -9,86 +9,87 @@
 
    void serverError() {
       #ifdef TFT_DISPLAY
-         setDisplayText("Server connect fail", WHITE, RED, 3, 0, 80);
-         Serial.println("Server connect fail");
-      #endif;
-
+         setDisplayErrorText("Server connect fail");
+      #endif
    }
 
    void connectionError() {
       #ifdef TFT_DISPLAY
-         setDisplayText("Wifi connect fail", WHITE, RED, 3, 0, 80);
-         Serial.println("Wifi connect fail");
-      #endif;
+         setDisplayErrorText("Wifi connect fail");
+      #endif
    }
 
    void connection() {
       #ifdef TFT_DISPLAY
-         setDisplayText("Wifi connected", WHITE, RED, 3, 0, 80);
-         Serial.println("Wifi connected");
-      #endif;
+         setDisplayErrorText("Wifi connected");
+      #endif
    }
 
    void logoScreen() {
-      #ifdef TFT_DISPLAY 
-         setDisplayText("bitcoinSwitch", WHITE, PURPLE, 4, 0, 80);
-         Serial.println("bitcoinSwitch");
-      #endif;
+      #if defined(M5STACK)
+         setDisplayText("bitcoinSwitch", PURPLE, WHITE, 4, 0, 80);
+      #elif defined(TTGO)
+         setDisplayText("bitcoinSwitch", PURPLE, WHITE, 2, 0, 70);
+      #endif 
    }
 
    void portalLaunched() {
-      #ifdef TFT_DISPLAY 
-         setDisplayText("PORTAL LAUNCH", WHITE, PURPLE, 4, 0, 80);
-         Serial.println("PORTAL LAUNCH");
-      #endif;
+      #if defined(M5STACK)
+         setDisplayText("PORTAL LAUNCH", PURPLE, WHITE, 4, 0, 80);
+      #elif defined(TTGO)
+         setDisplayText("PORTAL LAUNCH", PURPLE, WHITE, 2, 0, 70);
+      #endif 
    }
 
    void processingScreen() {
-      #ifdef TFT_DISPLAY 
-         setDisplayText("PROCESSING", BLACK, RED, 4, 40, 80);
-         Serial.println("PROCESSING");
-      #endif;
+      #if defined(M5STACK)
+         setDisplayText("PORTAL LAUNCH", PURPLE, WHITE, 4, 0, 80);
+      #elif defined(TTGO)
+         setDisplayText("PORTAL LAUNCH", PURPLE, WHITE, 2, 0, 70);
+      #endif
    }
 
    void lnbitsScreen() {
-      #ifdef TFT_DISPLAY 
+      #if defined(M5STACK)
          setDisplayText("POWERED BY LNBITS", WHITE, BLACK, 3, 10, 90);
-         Serial.println("POWERED BY LNBITS");
-      #endif;
+      #elif defined(TTGO)
+         setDisplayText("POWERED BY LNBITS", WHITE, BLACK, 2, 10, 90);
+      #endif
    }
 
    void portalScreen() {
-      #ifdef TFT_DISPLAY 
+      #if defined(M5STACK)
          setDisplayText("PORTAL LAUNCHED", BLACK, WHITE, 3, 30, 80);
-         Serial.println("PORTAL LAUNCHED");
-      #endif;
+      #elif defined(TTGO)
+         setDisplayText("PORTAL LAUNCHED", BLACK, WHITE, 2, 30, 80);
+      #endif
    }
 
    void paidScreen() {
-      #ifdef TFT_DISPLAY 
-         setDisplayText("PAID", WHITE, RED, 4, 110, 80);
-         Serial.println("PAID");
-      #endif;
+      #if defined(M5STACK)
+         setDisplayText("PAID", BLACK, GREEN, 4, 110, 80);
+      #elif defined(TTGO)
+         setDisplayText("PAID", BLACK, GREEN, 3, 110, 80);
+      #endif
    }
 
    void completeScreen() {
-      #ifdef TFT_DISPLAY 
+      #if defined(M5STACK)
          setDisplayText("COMPLETE", BLACK, WHITE, 4, 60, 80);
-         Serial.println("COMPLETE");
-      #endif;
+      #elif defined(TTGO)
+         setDisplayText("COMPLETE", BLACK, WHITE, 2, 60, 80);
+      #endif
    }
 
    void errorScreen() {
       #ifdef TFT_DISPLAY 
-         setDisplayText("ERROR", BLACK, WHITE, 4, 70, 80);
-         Serial.println("ERROR");
-      #endif;
+         setDisplayErrorText("ERROR");
+      #endif
    }
 
    void qrdisplayScreen(String qrCodeData) {
       #ifdef TFT_DISPLAY 
          displayQrCode(qrCodeData, 2, 10);
-         Serial.println("QRCode..");
-      #endif;
+      #endif
    }
 #endif
