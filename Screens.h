@@ -5,8 +5,6 @@
 #ifndef Screens_h
   #define Screens_h
 
-  #define TTGO
-
    void serverError() {
       #ifdef TFT_DISPLAY
          setDisplayErrorText("Server connect fail");
