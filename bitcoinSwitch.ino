@@ -5,10 +5,6 @@
 #include <SPI.h>
 #include <Wire.h>
 
-#include "UriComponents.h"
-#include "DisplayHandler.h"
-#include "Screens.h"
-
 #ifdef M5STACK
   #include <JC_Button.h>
 #endif
@@ -17,9 +13,13 @@
 #include <ArduinoJson.h>
 
 //NFC
-#include <PN532.h>
 #include <PN532_I2C.h>
 #include <NfcAdapter.h>
+
+//My headers
+#include "UriComponents.h"
+#include "DisplayHandler.h"
+#include "Screens.h"
 
 ///defines
 #define PARAM_FILE "/elements.json"
@@ -224,8 +224,7 @@ struct Invoice {
 };
 
 // setup
-void setup()
-{
+void setup() {
   Serial.begin(115200);
 
   // Print some useful debug output - the filename and compilation time
@@ -244,11 +243,11 @@ void setup()
   #endif
 
   int timer = 0;
-  while (timer < 2000) {
+  while(timer < 2000) {
     #ifdef M5STACK
       digitalWrite(2, LOW);
-      if (BTNA.read() == 1) {
-        Serial.println("Launch portal");
+      if(BTNA.read() == 1) {
+        Serial.println(F("Launch portal"));
         triggerAp = true;
         timer = 5000;
       }
@@ -256,7 +255,7 @@ void setup()
     #else
       Serial.println(touchRead(portalPin));
       if(touchRead(portalPin) < 60) {
-        Serial.println("Launch portal");
+        Serial.println(F("Launch portal"));
         portalLaunched();
         triggerAp = true;
         timer = 5000;
@@ -270,14 +269,14 @@ void setup()
   FlashFS.begin(FORMAT_ON_FAIL);
   SPIFFS.begin(true);
   if(format == true) {
-    debugSerialPrintln("Formating Flash...:");
+    debugSerialPrintln(F("Formating Flash...:"));
     SPIFFS.format();
-    debugSerialPrintln("Formated Flash!");
+    debugSerialPrintln(F("Formated Flash!"));
   }
 
   // get the saved details and store in global variables
   File paramFile = FlashFS.open(PARAM_FILE, "r");
-  if (paramFile) {
+  if(paramFile) {
     StaticJsonDocument<2500> doc;
     DeserializationError error = deserializeJson(doc, paramFile.readString());
 
@@ -325,14 +324,14 @@ void setup()
   elementsAux.load(FPSTR(PAGE_ELEMENTS));
   elementsAux.on([](AutoConnectAux &aux, PageArgument &arg) {
     File param = FlashFS.open(PARAM_FILE, "r");
-    if (param) {
+    if(param) {
       aux.loadElement(param, {"password", "server", "lnurl", "invoicekey", "pin", "time", "amount"});
       param.close();
     }
 
-    if (portal.where() == "/config") {
+    if(portal.where() == "/config") {
       File param = FlashFS.open(PARAM_FILE, "r");
-      if (param) {
+      if(param) {
         aux.loadElement(param, {"password", "server", "lnurl", "invoicekey", "pin", "time", "amount"});
         param.close();
       }
@@ -345,7 +344,7 @@ void setup()
   saveAux.on([](AutoConnectAux &aux, PageArgument &arg) {
     aux["caption"].value = PARAM_FILE;
     File param = FlashFS.open(PARAM_FILE, "w");
-    if (param) {
+    if(param) {
       // save as a loadable set for parameters.
       elementsAux.saveElement(param, {"password", "server", "lnurl", "invoicekey", "pin", "time", "amount"});
       param.close();
@@ -370,13 +369,13 @@ void setup()
   config.reconnectInterval = 1;
 
   //Launch Portal
-  if (triggerAp == true) {
+  if(triggerAp == true) {
     portalLaunched();
     config.immediateStart = true;
     portal.join({elementsAux, saveAux});
     portal.config(config);
     portal.begin();
-    while (true) {
+    while(true) {
       portal.handleClient();
     }
     timer = 2000;
@@ -384,7 +383,7 @@ void setup()
   timer = timer + 200;
   delay(200);
 
-  if (invoiceKey != "") {
+  if(invoiceKey != "") {
     portal.join({elementsAux, saveAux});
     config.autoRise = false;
     portal.config(config);
@@ -405,9 +404,9 @@ void setup()
 
 // loop
 void loop() {
-  while(WiFi.status() != WL_CONNECTED){
+  while(WiFi.status() != WL_CONNECTED) {
     connectionError();
-    Serial.println("Failed to connect");
+    Serial.println(F("Failed to connect"));
     digitalWrite(highPin.toInt(), LOW);
     printSwitchPinStatus();
     delay(5000);
@@ -420,7 +419,7 @@ void loop() {
   printSwitchPinStatus();
   
   if(lnurlP.substring(0, 5) == "LNURL") {
-    debugSerialPrintln("lnurlP.substring(0, 5) == \"LNURL\"");
+    debugSerialPrintln(F("lnurlP.substring(0, 5) == \"LNURL\""));
     qrdisplayScreen(lnurlP);
     checkBalance();
     oldBalance = balance;
@@ -428,7 +427,7 @@ void loop() {
 
     while((oldBalance + amount.toInt()) > balance) {
       checkBalance();
-      debugSerialPrintln("Scanning for nfc tag with LNURLw.....");
+      debugSerialPrintln(F("Scanning for nfc tag with LNURLw....."));
       scanForNfcTagWithLNURL();
       delay(2000);
     }
@@ -445,10 +444,10 @@ void loop() {
     delay(2000);
     paid = false;
   } else {
-    debugSerialPrintln("When no LNURLp yet, create one flow...");
+    debugSerialPrintln(F("When no LNURLp yet, create one flow..."));
     getInvoice("BitcoinSwitch");
     
-    if(down){
+    if(down) {
       errorScreen();
       getInvoice("BitcoinSwitch");
       delay(5000);
@@ -481,18 +480,18 @@ void loop() {
 void scanForNfcTagWithLNURL() {
   scanCount++;
   debugSerialPrintln("scanning... try number  " + String(scanCount));
-  if (nfc.tagPresent() && isScanningForNfcTag) {
+  if(nfc.tagPresent() && isScanningForNfcTag) {
     NfcTag tag = nfc.read();
     debugSerialPrintln(tag.getTagType());
     debugSerialPrintln("UID: " + tag.getUidString());
     debugDisplayText(tag.getUidString());
     
-    if (tag.hasNdefMessage()) {
+    if(tag.hasNdefMessage()) {
       NdefMessage message = tag.getNdefMessage();
 
       // If you have more than 1 Message then it wil cycle through them
       int recordCount = message.getRecordCount();
-      for (int i = 0; i < recordCount; i++) {
+      for(int i = 0; i < recordCount; i++) {
         debugSerialPrintln("\nNDEF Record " + String(i+1));
         NdefRecord record = message.getRecord(i);
 
@@ -506,12 +505,12 @@ void scanForNfcTagWithLNURL() {
 
         String lnUrl = getLNURL(string);
 
-        if (lnUrl != "") { 
-          debugSerialPrintln("decode scanned LNURL....");
+        if(lnUrl != "") { 
+          debugSerialPrintln(F("decode scanned LNURL...."));
           String decodedLnUrl = decode(lnUrl);
           debugDisplayText(decodedLnUrl);
           
-          debugSerialPrintln("request withrawal callback details....");
+          debugSerialPrintln(F("request withrawal callback details...."));
           Withdrawal withdrawal = getWithdrawal(decodedLnUrl);
           debugSerialPrintln("withdrawal.tag = " + withdrawal.tag); 
           debugSerialPrintln("withdrawal.callback = " + withdrawal.callback); 
@@ -521,65 +520,65 @@ void scanForNfcTagWithLNURL() {
           debugSerialPrintln("withdrawal.defaultDescription = " + withdrawal.defaultDescription);
           debugSerialPrintln(""); 
 
-          if (withdrawal.tag != "withdrawRequest") {
-            debugSerialPrintln("Scanned tag is not LNURL withdraw");
-            debugSerialPrintln("Present a tag with a LNURL withdraw on it");
-            debugDisplayText("Scanned tag is not LNURL withdraw");
+          if(withdrawal.tag != "withdrawRequest") {
+            debugSerialPrintln(F("Scanned tag is not LNURL withdraw"));
+            debugSerialPrintln(F("Present a tag with a LNURL withdraw on it"));
+            debugDisplayText(F("Scanned tag is not LNURL withdraw"));
             return;
           }
 
-          debugSerialPrintln("Scanned tag is a LNURL withdrawal request!");
-          if (!isAmountInWithdrawableBounds(amount.toInt(), withdrawal.minWithdrawable,  withdrawal.maxWithdrawable)) {
+          debugSerialPrintln(F("Scanned tag is a LNURL withdrawal request!"));
+          if(!isAmountInWithdrawableBounds(amount.toInt(), withdrawal.minWithdrawable,  withdrawal.maxWithdrawable)) {
             debugSerialPrintln("The requested amount: " + amount + " is not within this LNURL withdrawal bounds");
-            debugSerialPrintln("Amount not in bounds, can't withdraw from presented voucher.");
-            debugDisplayText("Amount not in bounds, can't withdraw from presented voucher.");
+            debugSerialPrintln(F("Amount not in bounds, can't withdraw from presented voucher."));
+            debugDisplayText(F("Amount not in bounds, can't withdraw from presented voucher."));
             return;
           }
 
           debugSerialPrintln("The requested amount: " + amount);
-          debugSerialPrintln(" is within this LNURL withdrawal bounds");
-          debugSerialPrintln("Continue payment flow by creating invoice");
+          debugSerialPrintln(F(" is within this LNURL withdrawal bounds"));
+          debugSerialPrintln(F("Continue payment flow by creating invoice"));
 
-          debugSerialPrintln("Will create invoice to request withrawal...");
+          debugSerialPrintln(F("Will create invoice to request withrawal..."));
           debugDisplayText("Creating invoice..");
           Invoice invoice = getInvoice("BitcoinSwitch QR");
           debugSerialPrintln("invoice.paymentHash = " + invoice.paymentHash); 
           debugSerialPrintln("invoice.paymentRequest = " + invoice.paymentRequest);
           debugSerialPrintln("invoice.checkingId = " + invoice.checkingId);  
           debugSerialPrintln("invoice.lnurlResponse = " + invoice.lnurlResponse); 
-          debugSerialPrintln(""); 
+          debugSerialPrintln(F("")); 
 
-          if (invoice.paymentRequest == "") {
-            debugSerialPrintln("Failed to create invoice");
-            debugDisplayText("Failed to create invoice"); 
+          if(invoice.paymentRequest == "") {
+            debugSerialPrintln(F("Failed to create invoice"));
+            debugDisplayText(F("Failed to create invoice")); 
             return;
           }
 
           bool success = withdraw(withdrawal.callback, withdrawal.k1, invoice.paymentRequest);
-          if (!success) {
-            debugSerialPrintln("Failed to request withdrawalfor invoice request with memo: "); // + invoice.memo);
-            debugDisplayText("Failed to request withdrawal invoice");
+          if(!success) {
+            debugSerialPrintln(F("Failed to request withdrawalfor invoice request with memo: ")); // + invoice.memo);
+            debugDisplayText(F("Failed to request withdrawal invoice"));
             return;
           }
 
-          debugSerialPrintln("Withdrawal request successfull!");
+          debugSerialPrintln(F("Withdrawal request successfull!"));
           //TODO: Check if open invoice is paid
           bool isPaid = checkInvoice(invoice.checkingId);
 
           int numberOfTries = 1;
-          while (!isPaid && (numberOfTries < 3)) {
+          while(!isPaid && (numberOfTries < 3)) {
             delay(2000);
             isPaid = checkInvoice(invoice.checkingId);
             numberOfTries++;
           }
 
-          if (!isPaid) {
-            debugSerialPrintln("Could not confirm withdrawal, the invoice has not been payed in time");
+          if(!isPaid) {
+            debugSerialPrintln(F("Could not confirm withdrawal, the invoice has not been payed in time"));
             debugDisplayText("Could not confirm withdrawal, transaction cancelled");
             return;
           }
-          debugSerialPrintln("Withdrawal successfull, invoice is payed!");
-          debugDisplayText("Withdrawal succeeded!! Thank you!");
+          debugSerialPrintln(F("Withdrawal successfull, invoice is payed!"));
+          debugDisplayText(F("Withdrawal succeeded!! Thank you!"));
           paid = true;
         }
       }
@@ -596,7 +595,7 @@ void checkBalance() {
   const char* invoicekey = invoiceKey.c_str();
   down = false;
 
-  if (!client.connect(lnbitsserver, 443)) {
+  if(!client.connect(lnbitsserver, 443)) {
     down = true;
     return;   
   }
@@ -608,9 +607,9 @@ void checkBalance() {
                 "User-Agent: ESP32\r\n" +
                 "Content-Type: application/json\r\n" +
                 "Connection: close\r\n\r\n");
-   while (client.connected()) {
+   while(client.connected()) {
    String line = client.readStringUntil('\n');
-    if (line == "\r") {
+    if(line == "\r") {
       break;
     }
   }
@@ -618,7 +617,7 @@ void checkBalance() {
   Serial.println(line);
   StaticJsonDocument<500> doc;
   DeserializationError error = deserializeJson(doc, line);
-  if (error) {
+  if(error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
     return;
@@ -633,7 +632,7 @@ Invoice getInvoice(String description)
   client.setInsecure();
   down = false;
 
-  if (!client.connect(lnbitsServer.c_str(), 443)){
+  if(!client.connect(lnbitsServer.c_str(), 443)) {
     down = true;
     return {};   
   }
@@ -652,9 +651,9 @@ Invoice getInvoice(String description)
   client.print(request);
   debugSerialPrintln(request);
   
-  while (client.connected()) {
+  while(client.connected()) {
     String line = client.readStringUntil('\n');
-    if (line == "\r") {
+    if(line == "\r") {
       break;
     }
   }
@@ -662,7 +661,7 @@ Invoice getInvoice(String description)
   String line = client.readString();
   StaticJsonDocument<1000> doc;
   DeserializationError error = deserializeJson(doc, line);
-  if (error) {
+  if(error) {
     debugSerialPrintln("deserializeJson() failed: " + String(error.f_str()));
     return {};
   }
@@ -687,7 +686,7 @@ bool checkInvoice(String invoiceId) {
   client.setInsecure();
   down = false;
 
-  if (!client.connect(lnbitsServer.c_str(), 443)){
+  if(!client.connect(lnbitsServer.c_str(), 443)) {
     down = true;
     return false;   
   }
@@ -701,9 +700,9 @@ bool checkInvoice(String invoiceId) {
   client.print(request);
   debugSerialPrintln(request);
   
-  while (client.connected()) {
+  while(client.connected()) {
     String line = client.readStringUntil('\n');
-    if (line == "\r") {
+    if(line == "\r") {
       break;
     }
   }
@@ -711,8 +710,8 @@ bool checkInvoice(String invoiceId) {
   debugSerialPrintln(line);
   StaticJsonDocument<200> doc;
   DeserializationError error = deserializeJson(doc, line);
-  if (error) {
-    debugSerialPrintln(("deserializeJson() failed: ") + String(error.f_str()));
+  if(error) {
+    debugSerialPrintln("deserializeJson() failed: " + String(error.f_str()));
     return false;
   }
   bool isPaid = doc["paid"];
@@ -727,17 +726,17 @@ String getLNURL(String string) {
 //  string.trim();
 //  string.toUpperCase();
 //
-//  if (string.startsWith("LNURL")) {
+//  if(string.startsWith("LNURL")) {
 //    debugSerialPrint("found LNURL");
 //    return string;
 //  
-//  } else if (string.startsWith("LIGHTNING:LNURL")) {
+//  } else if(string.startsWith("LIGHTNING:LNURL")) {
     debugSerialPrintln("found lightning URI with LNURL: " + string);
     string.remove(0,11);
     return string;
 //      
 //  } else {
-//    debugSerialPrintln("string is no LNURL");
+//    debugSerialPrintln(F("string is no LNURL");
 //    return "";
 //  }
 //  return string;
@@ -748,7 +747,7 @@ String decode(String lnUrl) {
   client.setInsecure();
   down = false;
 
-  if (!client.connect(lnbitsServer.c_str(), 443)){
+  if(!client.connect(lnbitsServer.c_str(), 443)) {
     down = true;
     return "";   
   }
@@ -766,9 +765,9 @@ String decode(String lnUrl) {
   client.print(request);
   debugSerialPrintln(request);
    
-  while (client.connected()) {
+  while(client.connected()) {
     String line = client.readStringUntil('\n');
-    if (line == "\r") {
+    if(line == "\r") {
       break;
     }
   }
@@ -778,7 +777,7 @@ String decode(String lnUrl) {
   DynamicJsonDocument doc(capacity);  
   
   DeserializationError error = deserializeJson(doc, line);
-  if (error) {
+  if(error) {
     debugSerialPrintln("deserializeJson() failed: " + String(error.f_str()));
     return "";
   }
@@ -795,12 +794,12 @@ Withdrawal getWithdrawal(String uri) {
   UriComponents uriComponents = UriComponents::Parse(uri.c_str());
   String host = uriComponents.host.c_str();
 
-  if (!client.connect(host.c_str(), 443)) {
+  if(!client.connect(host.c_str(), 443)) {
     down = true;
     return {};   
   }
   
-  debugSerialPrintln("xxxxx!!!!!!");
+  debugSerialPrintln(F("xxxxx!!!!!!"));
   String request = String("GET ") + uri + " HTTP/1.0\r\n" +
     "User-Agent: ESP32\r\n" +
     "accept: text/html\r\n" +
@@ -808,9 +807,9 @@ Withdrawal getWithdrawal(String uri) {
   debugSerialPrintln(request);
   client.print(request);
 
-  while (client.connected()) {
+  while(client.connected()) {
    String line = client.readStringUntil('\n');
-   if (line == "\r") {
+   if(line == "\r") {
      break;
     }
   }
@@ -821,7 +820,7 @@ Withdrawal getWithdrawal(String uri) {
   const size_t capacity = JSON_OBJECT_SIZE(2) + 800;
   DynamicJsonDocument doc(capacity);  
   DeserializationError error = deserializeJson(doc, line);
-  if (error) {
+  if(error) {
     debugSerialPrintln(("deserializeJson() failed: ") + String(error.f_str()));
     return {};
   }
@@ -849,7 +848,7 @@ bool withdraw(String callback, String k1, String pr) {
   String host = uriComponents.host.c_str();
   down = false;
 
-  if (!client.connect(host.c_str(), 443)) {
+  if(!client.connect(host.c_str(), 443)) {
     down = true;
     return {};   
   }
@@ -861,9 +860,9 @@ bool withdraw(String callback, String k1, String pr) {
   client.print(request);
   debugSerialPrintln(request);
   
-  while (client.connected()) {
+  while(client.connected()) {
     String line = client.readStringUntil('\n');
-    if (line == "\r") {
+    if(line == "\r") {
       break;
     }
   }
@@ -871,7 +870,7 @@ bool withdraw(String callback, String k1, String pr) {
   debugSerialPrintln(line);
   StaticJsonDocument<200> doc;
   DeserializationError error = deserializeJson(doc, line);
-  if (error) {
+  if(error) {
     debugSerialPrintln("deserializeJson() failed: " + String(error.f_str()));
     return false;
   }
@@ -882,22 +881,20 @@ bool withdraw(String callback, String k1, String pr) {
 //////// Helper functions /////////////
 String convertToStringFromBytes(byte dataArray[], int sizeOfArray) {
   String stringOfData = "";
-  for (int byteIndex = 0; byteIndex < sizeOfArray; byteIndex++) {
+  for(int byteIndex = 0; byteIndex < sizeOfArray; byteIndex++) {
     stringOfData += (char)dataArray[byteIndex];
   }
   return stringOfData;
 }
 
 /////////////////Serial Print //////////////
-void debugSerialPrintln(String string) 
-{
+void debugSerialPrintln(const String &string) {
   #if DEBUG == 1
     Serial.println(string);
   #endif
 }
 
-void printSwitchPinStatus() 
-{
+void printSwitchPinStatus() {
   int highPinState = digitalRead(highPin.toInt());
   debugSerialPrintln("State of switch-pin: "+ highPin + " = " + String(highPinState));
   debugSerialPrintln("Switch ON time configuration = " + timePin + " ms");
