@@ -1,5 +1,5 @@
 #include "DisplayHandler.h"
-#include "qrcoded.h"
+#include "qrcode.h"
 
 #ifdef TFT_DISPLAY
   #include <TFT_eSPI.h>
@@ -76,9 +76,9 @@ void setDisplayErrorText(String text) {
 }
 
 void debugDisplayText(String text) {
-  #if DEBUG == 1
+  // #if DEBUG == 1
     #ifdef TFT_DISPLAY
-      setDisplayText(text, BLACK, GREEN);
+      setDisplayText(text, GREEN, BLACK);
     #endif
-  #endif
+  // #endif
 }

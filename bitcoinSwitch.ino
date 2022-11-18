@@ -1,3 +1,13 @@
+///defines
+#define PARAM_FILE "/elements.json"
+#define FORMAT_ON_FAIL true
+#define DEBUG 1 //set to 1 to show DEBUG Serial print debug logging, if not set to 0
+#define MIFARE_ULTRALIGHT_DEBUG
+#define NDEF_DEBUG
+
+///Includes
+#include <Arduino.h>
+
 #include <WiFi.h>
 #include <WebServer.h>
 #include <FS.h>
@@ -5,14 +15,11 @@
 #include <SPI.h>
 #include <Wire.h>
 
-#ifdef M5STACK
-  #include <JC_Button.h>
-#endif
-
 #include <AutoConnect.h>
 #include <ArduinoJson.h>
 
 //NFC
+#include <PN532.h>
 #include <PN532_I2C.h>
 #include <NfcAdapter.h>
 
@@ -21,10 +28,10 @@
 #include "DisplayHandler.h"
 #include "Screens.h"
 
-///defines
-#define PARAM_FILE "/elements.json"
-#define FORMAT_ON_FAIL true
-#define DEBUG 1 //set to 1 to show DEBUG Serial print debug logging, if not set to 0
+//M5STACK
+#ifdef M5STACK
+  #include <JC_Button.h>
+#endif
 
 fs::SPIFFSFS &FlashFS = SPIFFS;
 using WebServerClass = WebServer;
@@ -399,7 +406,7 @@ void setup() {
   //start nfc scanner
   nfc.begin();
   isScanningForNfcTag = false;
-  // delay(1000);
+  delay(1000);
 }
 
 // loop
@@ -481,6 +488,7 @@ void scanForNfcTagWithLNURL() {
   scanCount++;
   debugSerialPrintln("scanning... try number  " + String(scanCount));
   if(nfc.tagPresent() && isScanningForNfcTag) {
+    debugSerialPrintln(F("nfc.tagPresent() && isScanningForNfcTag"));
     NfcTag tag = nfc.read();
     debugSerialPrintln(tag.getTagType());
     debugSerialPrintln("UID: " + tag.getUidString());

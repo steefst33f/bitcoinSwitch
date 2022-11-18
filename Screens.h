@@ -23,6 +23,12 @@
       #endif
    }
 
+   void nfcModuleConnectionError() {
+      #ifdef TFT_DISPLAY
+         setDisplayErrorText("Sorry, NFC payment option not available.");
+      #endif
+   }
+
    void logoScreen() {
       #if defined(M5STACK)
          setDisplayText("bitcoinSwitch", PURPLE, WHITE, 4, 0, 80);
