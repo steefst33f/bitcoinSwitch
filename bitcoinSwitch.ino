@@ -517,6 +517,7 @@ void scanForNfcTagWithLNURL() {
           debugSerialPrintln(F("decode scanned LNURL...."));
           String decodedLnUrl = decode(lnUrl);
           debugDisplayText(decodedLnUrl);
+          debugSerialPrintln(decodedLnUrl);
           
           debugSerialPrintln(F("request withrawal callback details...."));
           Withdrawal withdrawal = getWithdrawal(decodedLnUrl);
@@ -526,12 +527,12 @@ void scanForNfcTagWithLNURL() {
           debugSerialPrintln("withdrawal.minWithdrawable = " + String(withdrawal.minWithdrawable)); 
           debugSerialPrintln("withdrawal.maxWithdrawable = " + String(withdrawal.maxWithdrawable)); 
           debugSerialPrintln("withdrawal.defaultDescription = " + withdrawal.defaultDescription);
-          debugSerialPrintln(""); 
+          debugSerialPrintln(F("")); 
 
           if(withdrawal.tag != "withdrawRequest") {
             debugSerialPrintln(F("Scanned tag is not LNURL withdraw"));
             debugSerialPrintln(F("Present a tag with a LNURL withdraw on it"));
-            debugDisplayText(F("Scanned tag is not LNURL withdraw"));
+            debugDisplayText(F("Scanned tag is not LNURL withdraw \r\nPresent a tag with a LNURL withdraw on it"));
             return;
           }
 
@@ -604,6 +605,7 @@ void checkBalance() {
   down = false;
 
   if(!client.connect(lnbitsserver, 443)) {
+    debugSerialPrintln("Client couldn't connect to LNBitsServer to check Balance");
     down = true;
     return;   
   }
@@ -641,6 +643,7 @@ Invoice getInvoice(String description)
   down = false;
 
   if(!client.connect(lnbitsServer.c_str(), 443)) {
+    debugSerialPrintln("Client couldn't connect to LNBitsServer to create Invoice");
     down = true;
     return {};   
   }
@@ -695,6 +698,7 @@ bool checkInvoice(String invoiceId) {
   down = false;
 
   if(!client.connect(lnbitsServer.c_str(), 443)) {
+    debugSerialPrintln("Client couldn't connect to LNBitsServer to check Invoice");
     down = true;
     return false;   
   }
@@ -730,24 +734,24 @@ bool checkInvoice(String invoiceId) {
 /// LNURLw functions
 String getLNURL(String string) {
   debugSerialPrintln("bool islLNURL(" + string + ")");
-//  
-//  string.trim();
-//  string.toUpperCase();
-//
-//  if(string.startsWith("LNURL")) {
-//    debugSerialPrint("found LNURL");
-//    return string;
-//  
-//  } else if(string.startsWith("LIGHTNING:LNURL")) {
+ 
+  string.trim();
+  string.toUpperCase();
+
+  // if(string.startsWith("LNURL")) {
+  //   debugSerialPrintln(F("found LNURL"));
+  //   return string;
+  // } else 
+  if(string.startsWith(string)) {
+    // string.startsWith("LIGHTNING:LNURL")) {
     debugSerialPrintln("found lightning URI with LNURL: " + string);
     string.remove(0,11);
-    return string;
-//      
-//  } else {
-//    debugSerialPrintln(F("string is no LNURL");
-//    return "";
-//  }
-//  return string;
+    return string;     
+  } else {
+    debugSerialPrintln(F("string is no LNURL"));
+    return "";
+  }
+  return string;
 }
 
 String decode(String lnUrl) {
@@ -756,6 +760,7 @@ String decode(String lnUrl) {
   down = false;
 
   if(!client.connect(lnbitsServer.c_str(), 443)) {
+    debugSerialPrintln("Client couldn't connect to LNBitsServer to decode LNURL");
     down = true;
     return "";   
   }
@@ -803,6 +808,7 @@ Withdrawal getWithdrawal(String uri) {
   String host = uriComponents.host.c_str();
 
   if(!client.connect(host.c_str(), 443)) {
+    debugSerialPrintln("Client couldn't connect to service to get Withdrawl");
     down = true;
     return {};   
   }
