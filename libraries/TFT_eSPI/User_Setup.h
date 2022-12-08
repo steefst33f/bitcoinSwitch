@@ -36,7 +36,7 @@
 //#define RPI_DISPLAY_TYPE // 20MHz maximum SPI
 
 // Only define one driver, the other ones must be commented out
-//#define ILI9341_DRIVER
+#define ILI9341_DRIVER
 //#define ST7735_DRIVER      // Define additional parameters below for this display
 //#define ILI9163_DRIVER     // Define additional parameters below for this display
 //#define S6D02A1_DRIVER
@@ -68,14 +68,7 @@
 
 // For M5Stack ESP32 module with integrated ILI9341 display ONLY, remove // in line below
 
-#define M5STACK
-#define TFT_MISO 19
-#define TFT_MOSI 23
-#define TFT_SCLK 18
-#define TFT_CS   14  // Chip select control pin
-#define TFT_DC   27  // Data Command control pin
-#define TFT_RST  33  // Reset pin (could connect to Arduino RESET pin)
-#define TFT_BL   32  // LED back-light (required for M5Stack)
+// #define M5STACK
 
 // For ST7789, ST7735 and ILI9163 ONLY, define the pixel width and height in portrait orientation
 // #define TFT_WIDTH  80
@@ -160,9 +153,9 @@
 // ###### EDIT THE PIN NUMBERS IN THE LINES FOLLOWING TO SUIT YOUR ESP8266 SETUP ######
 
 // For NodeMCU - use pin numbers in the form PIN_Dx where Dx is the NodeMCU pin designation
-//#define TFT_CS   PIN_D8  // Chip select control pin D8
-//#define TFT_DC   PIN_D3  // Data Command control pin
-//#define TFT_RST  PIN_D4  // Reset pin (could connect to NodeMCU RST, see next line)
+#define TFT_CS   PIN_D8  // Chip select control pin D8
+#define TFT_DC   PIN_D3  // Data Command control pin
+#define TFT_RST  PIN_D4  // Reset pin (could connect to NodeMCU RST, see next line)
 //#define TFT_RST  -1    // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
 
 //#define TFT_BL PIN_D1  // LED back-light (only for ST7789 with backlight control pin)
