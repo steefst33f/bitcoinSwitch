@@ -23,6 +23,9 @@
 #include <PN532_I2C.h>
 #include <NfcAdapter.h>
 
+//Servo
+#include <ESP32Servo.h>
+
 //My headers
 #include "UriComponents.h"
 #include "DisplayHandler.h"
@@ -43,7 +46,7 @@ using WebServerClass = WebServer;
 /* comment out #define M5STACK in DisplayHelpers.h if you don't use the M5Stack */        
 bool format = false; // true for formatting SPIFFS, use once, then make false and reflash
 int portalPin = 2;
-
+int servoPin = 15;
 /////////////////////////////////
 /////////////////////////////////
 /////////////////////////////////
@@ -63,6 +66,9 @@ String payReq;
 //nfc variables
 bool isScanningForNfcTag = true;
 int scanCount = 0; 
+
+//servo variable
+Servo servo;
 
 // variables
 int balance;
@@ -403,6 +409,8 @@ void setup() {
   digitalWrite(highPin.toInt(), LOW);
   printSwitchPinStatus();
 
+  servo.attach(servoPin);
+
   //start nfc scanner
   nfc.begin();
   isScanningForNfcTag = false;
@@ -447,6 +455,7 @@ void loop() {
     //turn on switch
     digitalWrite(highPin.toInt(), HIGH);
     delay(timePin.toInt());
+    dispense();
     digitalWrite(highPin.toInt(), LOW); 
     delay(2000);
     paid = false;
@@ -471,6 +480,7 @@ void loop() {
         completeScreen();
         digitalWrite(highPin.toInt(), HIGH);
         delay(timePin.toInt());
+        dispense();
         digitalWrite(highPin.toInt(), LOW); 
         printSwitchPinStatus();
       }
@@ -605,7 +615,7 @@ void checkBalance() {
   down = false;
 
   if(!client.connect(lnbitsserver, 443)) {
-    debugSerialPrintln("Client couldn't connect to LNBitsServer to check Balance");
+    debugSerialPrintln("Client couldn't connect to " + String(lnbitsserver) + "to check Balance");
     down = true;
     return;   
   }
@@ -890,6 +900,16 @@ bool withdraw(String callback, String k1, String pr) {
   }
   bool isOk = doc["status"];
   return isOk;
+}
+
+//////// Servo ///////
+void dispense() {
+  debugSerialPrintln(F("Vending Machine dispense START!"));
+  servo.writeMicroseconds(2000); // rotate
+  delay(950);
+  servo.writeMicroseconds(1500);  // stop
+  delay(500);
+  debugSerialPrintln(F("Vending Machine dispense STOP!!"));
 }
 
 //////// Helper functions /////////////
