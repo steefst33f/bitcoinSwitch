@@ -45,6 +45,14 @@
       #endif 
    }
 
+   void vendorMode() {
+      #if defined(M5STACK)
+         setDisplayText("VENDOR REFILL MODE", PURPLE, WHITE, 4, 0, 80);
+      #elif defined(TTGO)
+         setDisplayText("VENDOR REFILL MODE", PURPLE, WHITE, 2, 0, 70);
+      #endif 
+   }
+
    void processingScreen() {
       #if defined(M5STACK)
          setDisplayText("PORTAL LAUNCH", PURPLE, WHITE, 4, 0, 80);

@@ -47,6 +47,9 @@ using WebServerClass = WebServer;
 bool format = false; // true for formatting SPIFFS, use once, then make false and reflash
 int portalPin = 2;
 int servoPin = 15;
+int vendorPin = 33;
+int fillDispencerButton = 26;
+int emptyDispencerButton = 27;
 /////////////////////////////////
 /////////////////////////////////
 /////////////////////////////////
@@ -248,6 +251,11 @@ void setup() {
   initDisplay();
   logoScreen();
 
+  //setup dispenser
+  servo.attach(servoPin);
+  pinMode(fillDispencerButton, INPUT);
+  pinMode(emptyDispencerButton, INPUT);
+
   #ifdef M5STACK
     const byte BUTTON_PIN_A = 39;
     Button BTNA(BUTTON_PIN_A);
@@ -266,13 +274,30 @@ void setup() {
       }
       digitalWrite(2, HIGH);
     #else
-      Serial.println(touchRead(portalPin));
+      Serial.println("portalPin: " + String(touchRead(portalPin)));
       if(touchRead(portalPin) < 60) {
         Serial.println(F("Launch portal"));
         portalLaunched();
         triggerAp = true;
         timer = 5000;
       }
+
+      Serial.println("vendorPin: " + String(touchRead(vendorPin)));
+      if(touchRead(vendorPin) < 60) {
+        Serial.println(F("In Vendor Fill/Empty mode"));
+        Serial.println(F("(Restart Vending Machine to exit)"));
+        vendorMode();
+
+        ////Dispenser buttons scanning////
+        while (true) {
+          if (digitalRead(fillDispencerButton) == HIGH) {
+            fillDispenser();
+          } else if(digitalRead(emptyDispencerButton) == HIGH) {
+            emptyDispenser();
+          }
+        }  
+      }
+
     #endif
     timer = timer + 100;
     delay(300);
@@ -391,7 +416,7 @@ void setup() {
     while(true) {
       portal.handleClient();
     }
-    timer = 2000;
+    // timer = 2000;
   }
   timer = timer + 200;
   delay(200);
@@ -408,8 +433,6 @@ void setup() {
   pinMode(highPin.toInt(), OUTPUT);
   digitalWrite(highPin.toInt(), LOW);
   printSwitchPinStatus();
-
-  servo.attach(servoPin);
 
   //start nfc scanner
   nfc.begin();
@@ -615,7 +638,7 @@ void checkBalance() {
   down = false;
 
   if(!client.connect(lnbitsserver, 443)) {
-    debugSerialPrintln("Client couldn't connect to " + String(lnbitsserver) + "to check Balance");
+    debugSerialPrintln("Client couldn't connect to " + String(lnbitsserver) + " to check Balance");
     down = true;
     return;   
   }
@@ -908,8 +931,27 @@ void dispense() {
   servo.writeMicroseconds(2000); // rotate
   delay(950);
   servo.writeMicroseconds(1500);  // stop
-  delay(500);
   debugSerialPrintln(F("Vending Machine dispense STOP!!"));
+}
+
+void emptyDispenser() {
+  debugSerialPrintln(F("Empty dispenser!!"));
+  // let dispencer slowly turn in dispence direction, so the vender can empty all products from dispenser:
+  servo.writeMicroseconds(1700); // rotate clockwise (from the buyers point of view)
+  delay(5000);
+  servo.writeMicroseconds(1500);  // stop
+  delay(1000);
+  debugSerialPrintln(F("Done!"));
+}
+
+void fillDispenser() {
+  debugSerialPrintln(F("Fill dispenser!!"));
+  // let dispencer slowly turn in the fillup direction, so the vender can fill the dispendser with new products:
+  servo.writeMicroseconds(1300); // rotate counter cockwise (from the buyers point of view)
+  delay(5000);
+  servo.writeMicroseconds(1500);  // stop
+  delay(1000);
+  debugSerialPrintln(F("Done!"));
 }
 
 //////// Helper functions /////////////
