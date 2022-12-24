@@ -2,8 +2,8 @@
  * Predefined AutoConnect configuration parameters.
  * @file AutoConnectDefs.h
  * @author hieromon@gmail.com
- * @version  1.3.0
- * @date 2021-05-27
+ * @version  1.4.0
+ * @date 2022-09-16
  * @copyright  MIT license.
  */
 
@@ -50,7 +50,7 @@
 // Declaration to enable AutoConnectConfigAux.
 // AC_USE_CONFIGAUX must be enabled along with AUTOCONNECT_USE_JSON
 // to enable AutoConnectConfigAux.
-//#define AC_USE_CONFIGAUX 
+//#define AC_USE_CONFIGAUX
 #if defined(AC_USE_CONFIGAUX) && defined(AUTOCONNECT_USE_JSON)
 #define AUTOCONNECT_USE_CONFIGAUX
 #endif
@@ -133,6 +133,7 @@
 #define AUTOCONNECT_URI_CONNECT AUTOCONNECT_URI "/connect"
 #define AUTOCONNECT_URI_RESULT  AUTOCONNECT_URI "/result"
 #define AUTOCONNECT_URI_OPEN    AUTOCONNECT_URI "/open"
+#define AUTOCONNECT_URI_DELETE  AUTOCONNECT_URI "/del"
 #define AUTOCONNECT_URI_DISCON  AUTOCONNECT_URI "/disc"
 #define AUTOCONNECT_URI_RESET   AUTOCONNECT_URI "/reset"
 #define AUTOCONNECT_URI_SUCCESS AUTOCONNECT_URI "/success"
@@ -142,6 +143,16 @@
 #define AUTOCONNECT_URI_UPDATE_PROGRESS AUTOCONNECT_URI "/update_progress"
 #define AUTOCONNECT_URI_UPDATE_RESULT   AUTOCONNECT_URI "/update_result"
 #define AUTOCONNECT_URI_CONFIGAUX AUTOCONNECT_URI "/acconfig"
+
+// Default URI for connection successful response
+#ifndef AUTOCONNECT_URI_ONSUCCESS
+#define AUTOCONNECT_URI_ONSUCCESS AUTOCONNECT_URI_SUCCESS
+#endif // !AUTOCONNECT_URI_ONSUCCESS
+
+// Default URI for connection failure response
+#ifndef AUTOCONNECT_URI_ONFAIL
+#define AUTOCONNECT_URI_ONFAIL    AUTOCONNECT_URI_FAIL
+#endif // !AUTOCONNECT_URI_ONSUCCESS
 
 // Number of seconds in a unit time [s]
 #ifndef AUTOCONNECT_UNITTIME
@@ -200,10 +211,30 @@
 #define AUTOCONNECT_SSIDPAGEUNIT_LINES  5
 #endif // !AUTOCONNECT_SSIDPAGEUNIT_LINES
 
+// Fix to be compatibility with backward for ESP8266 core 2.5.1 or later
+// SD pin assignment for AutoConnectFile
+#ifndef AUTOCONNECT_SD_CS
+#if defined(ARDUINO_ARCH_ESP8266)
+#ifndef SD_CHIP_SELECT_PIN
+#define SD_CHIP_SELECT_PIN      SS
+#endif
+#define AUTOCONNECT_SD_CS       SD_CHIP_SELECT_PIN
+#elif defined(ARDUINO_ARCH_ESP32)
+#define AUTOCONNECT_SD_CS       SS
+#endif
+#endif // !AUTOCONNECT_SD_CS
+
 // SPI transfer speed for SD [Hz]
 #ifndef AUTOCONNECT_SD_SPEED
 #define AUTOCONNECT_SD_SPEED    4000000
 #endif // !AUTOCONNECT_SD_SPEED
+
+// Derivation of SCK frequency and ensuring SD.begin compatibility
+#if defined(SD_SCK_HZ)
+#define AC_SD_SPEED(s)  SD_SCK_HZ(s)
+#else
+#define AC_SD_SPEED(s)  s
+#endif
 
 // Flicker signal related factors
 // Flicker cycle during AP operation [ms]
@@ -219,7 +250,7 @@
 #define AUTOCONNECT_FLICKER_WIDTHAP   96
 #endif // !AUTOCONNECT_FLICKER_WIDTHAP
 // Flicker pulse width while WiFi is not connected (8bit resolution)
-#ifndef AUTOCONNECT_FLICKER_WIDTHDC 
+#ifndef AUTOCONNECT_FLICKER_WIDTHDC
 #define AUTOCONNECT_FLICKER_WIDTHDC   16
 #endif // !AUTOCONNECT_FLICKER_WIDTHDISCON
 // Ticker port
@@ -229,7 +260,17 @@
 #else  // Native pin for the arduino
 #define AUTOCONNECT_TICKER_PORT       2
 #endif
+#endif // !AUTOCONNECT_TICKER_PORT
+// Ticker active signal level value that the board dependent LED turns on.
+// As a typical example, the ON signal of built-in LED such as the
+// NodeMCU is LOW and the HIGH for the NodeMCU-32S as another example.
+#ifndef AUTOCONNECT_TICKER_LEVEL
+#ifdef ARDUINO_ARCH_ESP32
+#define AUTOCONNECT_TICKER_LEVEL      HIGH
+#else
+#define AUTOCONNECT_TICKER_LEVEL      LOW
 #endif
+#endif // !AUTOCONNECT_TICKER_LEVEL
 
 // Lowest WiFi signal strength (RSSI) that can be connected.
 #ifndef AUTOCONNECT_MIN_RSSI
@@ -264,21 +305,13 @@
 
 // Interval time of progress status periodical inquiry [ms]
 #ifndef AUTOCONNECT_UPDATE_INTERVAL
-#define AUTOCONNECT_UPDATE_INTERVAL   400
+#define AUTOCONNECT_UPDATE_INTERVAL   1500
 #endif // !AUTOCONNECT_UPDATE_INTERVAL
 
 // Wait timer for rebooting after updated
 #ifndef AUTOCONNECT_UPDATE_WAITFORREBOOT
 #define AUTOCONNECT_UPDATE_WAITFORREBOOT  15000
 #endif // !AUTOCONNECT_UPDATE_WAITFORREBOOT
-
-// A signal value that the board dependent LED turns on.
-// As a typical example, the ON signal of built-in LED such as the
-// NodeMCU is LOW and the HIGH for the NodeMCU-32S as another example.
-#ifndef AUTOCONNECT_UPDATE_LEDON
-// #define AUTOCONNECT_UPDATE_LEDON  HIGH
-#define AUTOCONNECT_UPDATE_LEDON  LOW
-#endif // !AUTOCONNECT_UPDATE_LEDON
 
 // URIs of the behaviors owned by the update server
 #ifndef AUTOCONNECT_UPDATE_CATALOG

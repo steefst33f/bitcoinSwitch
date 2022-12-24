@@ -3,7 +3,7 @@
 If you can access the **AutoConnect root path** as http://ESP8266IPADDRESS/_ac from browser, probably the Sketch uses *ESP8266WebServer::handleClient()* without [*AutoConnect::handleRequest()*](api.md#handlerequest).  
 For AutoConnect menus to work properly, call [*AutoConnect::handleRequest()*](api.md#handlerequest) after *ESP8266WebServer::handleClient()* invoked, or use [*AutoConnect::handleClient()*](api.md#handleclient). [*AutoConnect::handleClient()*](api.md#handleclient) is equivalent *ESP8266WebServer::handleClient* combined [*AutoConnect::handleRequest()*](api.md#handlerequest).
 
-See also the explanation [here](basicusage.md#esp8266webserver-hosted-or-parasitic).
+See also the explanation [here](basicusage.md#esp8266webserverwebserver-hosted-or-parasitic).
 
 ## <i class="fa fa-question-circle"></i> After updating to AutoConnect v1.0.0, established APs disappear from Open SSIDs with ESP32.
 
@@ -30,22 +30,28 @@ Consider activating the [AUTOCONNECT_APKEY_SSID](adconnection.md#match-with-know
 
 ## <i class="fa fa-question-circle"></i> Captive portal does not pop up.
 
-If your ESP module is already transparent to the internet, the captive portal screen will not pop up even if [**AutoConnectConfig::retainPortal**](apiconfig.md#retainportal) is enabled. Some people have mistaken sometimes about the behavioral condition of the Captive portal, it only pops up automatically when the ESP module is disconnected state from the Internet.
+If the ESP module is already transparent to the Internet, the device's captive portal screen does not pop up even if [**AutoConnectConfig::retainPortal**](apiconfig.md#retainportal) is enabled. The captive portal popup may also be misinterpreted as automatically activated when AutoConnect is disconnected from the Internet.
 
-We will hypothesize that you keep the ESP module with AP_STA mode by specifing the **retainPortal** and already connect to one of the access points which has Internet transparency as a WiFi client. At this time, your ESP module can already quote the DNS globally. Even if you take out the cellphone and access the **esp32ap**, the OS of your cellphone will determine that the access point (i.e. **esp32ap**) is transparent to the Internet. That is, the captive portal does not pop up.
+When your device connects to an access point, it determines if it is also transparent to the Internet according to the HTTP response from a specific URL. AutoConnect traps the HTTP request issued by the device and responds with a portal screen for AutoConnect. Then the device automatically pops up the HTML in response. It means the auto-popup when opening a captive portal is a feature your device OS has. In this mechanism, AutoConnect impersonates an internally launched DNS server response to trap HTTP requests for Internet transparency determination.
+
+However, its DNS response disguise is very rough, redirecting all FQDNs that do not end in .local to the SoftAP IP address of the ESP module. The redirect location is `/_ac`, and the responder for `/_ac` is AutoConnect. This kind of hack is also available as an [example](https://github.com/esp8266/Arduino/blob/master/libraries/DNSServer/examples/CaptivePortal/CaptivePortal.ino) in the Arduino ESP8266/ESP32 DNS server library.
+
+The reason AutoConnect shuts down the DNS server after establishing a connection with a WiFi access point and stops hacking HTTP requests for Internet transparency detection is because AutoConnect can only trap a broad range of DNS requests. After the ESP module connects to the access point, the sketch can access the Internet using the FQDN. To prevent it from interfering with that access, AutoConnect will stop the internally launched DNS. In other words, the only scene that allows automatic pop-ups to lead to the captive portal is when the ESP module is not transparent to the Internet.
+
+Instead, AutoConnect has options to restart the internal DNS server when the ESP module loses WiFi connectivity, allowing the device to auto-pop up a captive portal screen. If the sketch enables [AutoConnectConfig::retainPotral](apiconfig.md#retainportal) and [AutoConnectConfig::autoRise](apiconfig.md#autorise), then when the WiFi connection is lost (i.e. `WiFi.status() != WL_CONNECTED`), AutoConnect will initiate a trap by starting the **SoftAP** and the internal DNS server. At this time, the ESP module will transition to **WIFI_AP_STA** mode. The [AutoConnect::handleClient](api.md#handleclient) function performs this restart sequence each time it is called, so the sketch can resume the captive portal automatic pop-up while the `loop` function is running.
 
 ## <i class="fa fa-question-circle"></i> Compile error due to File system header file not found
 
 In [PlatformIO](https://docs.platformio.org/en/latest/), it may occur compilation error such as the bellows:
 
-```cpp
+```ini
 In file included from C:\Users\<user>\Documents\Arduino\libraries\AutoConnect\src\AutoConnect.h:30:0,
                  from src/main.cpp:28:
 C:\Users\<user>\Documents\Arduino\libraries\PageBuilder\src\PageBuilder.h:88:27:
 fatal error: SPIFFS.h: No such file or directory
 ```
 
-```cpp
+```ini
 In file included from C:\Users\<user>\Documents\Arduino\libraries\AutoConnect\src\AutoConnect.h:30,
                  from src\main.cpp:28:
 C:\Users\<user>\Documents\Arduino\libraries\PageBuilder\src\PageBuilder.h:93:17:
@@ -59,10 +65,12 @@ To avoid compilation errors in PlatformIO, specify [`lib_ldf_mode`](https://docs
 
 ```ini
 [env]
-lib_ldf_mode = deep
+lib_ldf_mode = deep+
 ```
 
-You should specify **`deep`** with [`lib_ldf_mode`](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-ldf-mode).
+You should specify **`deep+`** with [`lib_ldf_mode`](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-ldf-mode).
+
+Another option is to explicitly specify the file system to be applied to AutoConnect at build time. The compiler determines the file system to be applied to AutoConnect by preprocessor macro definitions defined in [AutoConnectDefs.h](https://github.com/Hieromon/AutoConnect/blob/master/src/AutoConnectDefs.h). The directives defined as `AC_USE_SPIFFS` and `AC_USE_LITTLEFS` specify that the respective file systems apply. The chapter [Using Filesystem](filesystem.md) details how to explicitly specify a file system for AutoConnect in PlatformIO.
 
 ## <i class="fa fa-question-circle"></i> Compile error occurs due to the text section exceeds
 
@@ -87,7 +95,7 @@ You can avoid a compile error in one of two ways:
 
 1. Disable an AutoConnectUpdate feature if you don't need.
 
-    You can disable the AutoConnectUpdate feature by commenting out the [**AUTOCONNECT_USE_UPDATE**](https://github.com/Hieromon/AutoConnect/blob/master/src/AutoConnectDefs.h#L34) macro in the [`AutoConnectDefs.h`](api.md#defined-macros) header file.
+    You can disable the AutoConnectUpdate feature by commenting out the [**AUTOCONNECT_USE_UPDATE**](https://github.com/Hieromon/AutoConnect/blob/master/src/AutoConnectDefs.h#L47) macro in the [`AutoConnectDefs.h`](api.md#defined-macros) header file.
     ```cpp
     #define AUTOCONNECT_USE_UPDATE
     ```
@@ -118,11 +126,11 @@ By default, AutoConnect saves the credentials of the established connection into
 You have the following two options to avoid this conflict:
 
 - Move the credential saving area of EEPROM.  
-  You can protect your data from corruption by notifying AutoConnect where to save credentials. Notification of the save location for the credentials uses [AutoConnectConfig::boundaryOffset](apiconfig.md#boundaryoffset) option. Refer to the chapter on [Advanced usage](advancedusage.md#move-the-saving-area-of-eeprom-for-the-credentials) for details.
+  You can protect your data from corruption by notifying AutoConnect where to save credentials. Notification of the save location for the credentials uses [AutoConnectConfig::boundaryOffset](apiconfig.md#boundaryoffset) option. Refer to the chapter on [Move the saving area of EEPROM for the credentials](adcredential.md#move-the-saving-area-of-eeprom-for-the-credentials) for details.
 
 - Suppresses the automatic save operation of credentials by AutoConnect.  
-  You can completely stop saving the credentials by AutoConnect. However, if you select this option, you lose the past credentials which were able to connect to the AP. Therefore, the effect of the [automatic reconnection feature](advancedusage.md#automatic-reconnect) will be lost.  
-  If you want to stop the automatic saving of the credentials, uses [AutoConnectConfig::autoSave](apiconfig.md#autosave) option specifying **AC_SAVECREDENTIAL_NEVER**. Refer to the chapter on [Advanced usage](advancedusage.md#autosave-credential) for details.
+  You can completely stop saving the credentials by AutoConnect. However, if you select this option, you lose the past credentials which were able to connect to the AP. Therefore, the effect of the [automatic reconnection feature](adconnection.md#automatic-reconnect) will be lost.  
+  If you want to stop the automatic saving of the credentials, uses [AutoConnectConfig::autoSave](apiconfig.md#autosave) option specifying **AC_SAVECREDENTIAL_NEVER**. Refer to the chapter on [Advanced usage](adcredential.md#autosave-credential) for details.
 
 ## <i class="fa fa-question-circle"></i> Does not appear esp8266ap in smartphone.
 
@@ -159,7 +167,7 @@ void loop() {
 
 ## <i class="fa fa-question-circle"></i> Does not response from /\_ac.
 
-Probably **WiFi.begin** failed with the specified SSID. Activating the [debug printing](advancedusage.md#debug-print) will help you to track down the cause.
+Probably **WiFi.begin** failed with the specified SSID. Activating the [debug printing](adothers.md#debug-print) will help you to track down the cause.
 
 
 ## <i class="fa fa-question-circle"></i> Hang up after Reset?
@@ -188,11 +196,11 @@ The correct boot mode for starting the Sketch is **(3, x)**.
 
 ## <i class="fa fa-question-circle"></i> How can I detect the captive portal starting?
 
-You can use the [AutoConnect::onDetect](api.md#ondetect) exit routine. For more details and an implementation example of the onDetect exit routine, refer to the chapter "[Captive portal start detection](advancedusage.md#captive-portal-start-detection)".
+You can use the [AutoConnect::onDetect](api.md#ondetect) exit routine. For more details and an implementation example of the onDetect exit routine, refer to the chapter [Captive portal start detection](adcpcontrol.md#captive-portal-start-detection).
 
 ## <i class="fa fa-question-circle"></i> How change HTTP port?
 
-HTTP port number is defined as a macro in [AutoConnectDefs.h](https://github.com/Hieromon/AutoConnect/blob/master/src/AutoConnectDefs.h#L123) header file. You can change it directly with several editors and must re-compile.
+HTTP port number is defined as a macro in [AutoConnectDefs.h](https://github.com/Hieromon/AutoConnect/blob/master/src/AutoConnectDefs.h#L193) header file. You can change it directly with several editors and must re-compile.
 
 ```cpp
 #define AUTOCONNECT_HTTPPORT    80
@@ -200,7 +208,7 @@ HTTP port number is defined as a macro in [AutoConnectDefs.h](https://github.com
 
 ## <i class="fa fa-question-circle"></i> How change SSID or Password in Captive portal?
 
-You can change both by using [AutoConnectConfig::apid](apiconfig.md#apid) and [AutoConnectConfig::psk](apiconfig.md#psk). Refer to section [Change SSID and Password for SoftAP](advancedusage.md#change-ssid-and-password-for-softap) in [Advanced usage](advancedusage.md).
+You can change both by using [AutoConnectConfig::apid](apiconfig.md#apid) and [AutoConnectConfig::psk](apiconfig.md#psk). Refer to section [Change SSID and Password for SoftAP](adnetwork.md#change-ssid-and-password-for-softap) in [Settings and controls for network and WiFi](adnetwork.md).
 
 ## <i class="fa fa-question-circle"></i> How do I detach the ArdunoJson?
 
@@ -221,7 +229,7 @@ build-flags = -DAUTOCONNECT_NOUSE_JSON
 
 ## <i class="fa fa-question-circle"></i> How erase the credentials saved in EEPROM?
 
-Make some sketches for erasing the EEPROM area, or some erasing utility is needed. You can prepare the Sketch to erase the saved credential with *AutoConnectCredential*. The *AutoConnectCrendential* class provides the access method to the saved credential in EEPROM and library source file is including it. Refer to '[Saved credential access](credit.md#saved-credential-in-eeprom)' on section [*Appendix*](credit.md) for details.
+Make some sketches for erasing the EEPROM area, or some erasing utility is needed. You can prepare the Sketch to erase the saved credential with *AutoConnectCredential*. The *AutoConnectCrendential* class provides the access method to the saved credential in EEPROM and library source file is including it. Refer to [Saved credential access](credit.md#saved-credential-in-eeprom) for details.
 
 !!! hint
     With the [**ESPShaker**](https://github.com/Hieromon/ESPShaker), you can access EEPROM interactively from the serial monitor, and of course you can erase saved credentials.
@@ -259,6 +267,9 @@ Link button to AutoConnect menu can be embedded into Sketch's web page. The root
 
 It consumes about 2K bytes in the static and about 12K bytes are consumed at the moment when menu executed.
 
+!!! info "Reducing Binary Size"
+    For sketches that do not require OTA feature or Custom Web pages, the build size can be reduced. See [Reducing Binary Size](basicusage.md#reducing-binary-size) in [Basic Usage](basicusage.md) for details.
+
 ## <i class="fa fa-question-circle"></i> How placing a style-qualified AutoConnectText horizontally?
 
 When the [style](acelements.md#style) parameter is specified for [AutoConnectText](acelements.md#autoconnecttext), it is always enclosed by the `<div>` tag, so the element placement direction is vertical and subsequent elements cannot be horizontal. If you want to place an element after AutoConnectText with the style, you can place the AutoConnectText horizontally by specifying the [`display`](https://developer.mozilla.org/en-US/docs/Web/CSS/display) CSS property with `inline` or `inline-block` in the style value. 
@@ -282,15 +293,53 @@ See also [AutoConnectText](acelements.md#post_8) chapter, [CSS Flow Layout](http
 
 ## <i class="fa fa-question-circle"></i> How placing HTML elements undefined in AutoConnectElements?
 
-[AutoConnectElement](acelements.md#autoconnectelement-a-basic-class-of-elements) can be applied in many cases when trying to place HTML elements that are undefined in AutoConnectElemets on custom Web pages. See [*Handling the custom Web Pages*](achandling.md#place-html-elements-undefined-in-autoconnectelements) section.
+[AutoConnectElement](acelements.md#autoconnectelement-a-basic-class-of-elements) can be applied in many cases when trying to place HTML elements that are undefined in AutoConnectElemets on custom Web pages. See [Handling the custom Web Pages](achandling.md#place-html-elements-undefined-in-autoconnectelements) section.
 
-## <i class="fa fa-question-circle"></i> I cannot complete to Wi-Fi login from smartphone.
+## <i class="fa fa-question-circle"></i> I cannot complete to WiFi login from smartphone.
 
 Because AutoConnect does not send a login success response to the captive portal requests from the smartphone. The login success response varies iOS, Android and Windows. By analyzing the request URL of different login success inquiries for each OS, the correct behavior can be implemented, but not yet. Please resets ESP8266 from the AutoConnect menu.
 
 ## <i class="fa fa-question-circle"></i> I cannot see the custom Web page.
 
 If the Sketch is correct, a JSON syntax error may have occurred. In this case, activate the [AC_DEBUG](faq.md#3-turn-on-the-debug-log-options) and rerun. If you take the message of JSON syntax error, the [Json Assistant](https://arduinojson.org/v5/assistant/) helps syntax checking. This online tool is provided by the author of ArduinoJson and is most consistent for the AutoConnect. 
+
+## <i class="fa fa-question-circle"></i> nvs_open failed: NOT_FOUND occurs.
+
+In ESP32, NVS open failure may occur during execution of AutoConnect::begin with the following message on the Serial monitor.
+
+```ini
+[E][Preferences.cpp:38] begin(): nvs_open failed: NOT_FOUND
+```
+
+This is not a malfunction and expected behavior. AutoConnect will continue to execute normally.
+
+AutoConnect saves the credentials of the access point to which it was able to connect to the NVS of the ESP32 module as [Preferences](https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/preferences.html#preferences) instances. The above error occurs when the area keyed for AutoConnect credentials does not exist in NVS. Usually, this error occurs immediately after erasing the ESP32 module flash or when running the AutoConnect sketch for the first time. If the AutoConnect credentials area does not exist in NVS, AutoConnect will automatically allocate it. Therefore, this error can be ignored and will not affect the execution of the sketch.
+
+## <i class="fa fa-question-circle"></i> Request handler not found in WebServer.
+
+It forms the following message as the most common form.
+
+```ini
+request handler not found
+```
+
+In ESP32, the above message has a detailed issuer.
+
+```ini
+[WebServer.cpp:649] _handleRequest(): request handler not found
+```
+
+If this message appears just by opening your custom web page or AutoConnect built-in page from a browser, it is probably the browser requesting a [favicon](https://en.wikipedia.org/wiki/Favicon) for that html page. Please instead of prematurely assuming that the detection of this message indicates an implementation flaw, identify the URL from which the request originated. You can find it in the AutoConnect trace that outputs to the serial monitor by enabling [`AC_DEBUG`](adothers.md#debug-print) macro.
+
+You can probably find the above message in the `AC_DEBUG` trace log. And if you can find the following trace just before that message, your sketch is working fine.
+
+```ini
+[AC] Host:192.168.1.17,/favicon.ico,ignored
+```
+
+It's just the browser asking for a favicon. Of course, your sketch doesn't have a favicon. That's what the "_request handler not found_" message means.
+
+The `AC_DEBUG` trace will record URL requests for which no request handler exists. If you find a `[AC] Host: IP_ADDRESS, URL, ignored` style message in the `AC_DEBUG` log, the request handler for that URL has not been registered with the WebServer. Even if your sketch has a custom web page with the said URL, it is probably causing a JSON syntax error and failing to deserialize. In such cases, the [ArduinoJson Assistant](https://arduinojson.org/v6/assistant/) can be helpful. It will find syntax errors in the JSON description for your custom web page.
 
 ## <i class="fa fa-question-circle"></i> Saved credentials are wrong or lost.
 
@@ -307,7 +356,7 @@ It may be two possibilities as follows:
 2. Heap is insufficient memory. AutoConnect entrusts HTML generation to PageBuilder that makes heavy use the String::concatenate function and causes memory fragmentation. This is a structural problem with PageBuilder, but it is difficult to solve immediately.
 
 If this issue produces with your sketch, Reloading the page may recover.  
-Also, you can check the memory running out status by rebuilding the Sketch with [PageBuilder's debug log option](faq.md#fn:2) turned on.
+Also, you can check the memory running out status by rebuilding the Sketch with [PageBuilder's debug log option](#3-turn-on-the-debug-log-options) turned on.
 
 If the heap memory is insufficient, the following message is displayed on the serial console.
 

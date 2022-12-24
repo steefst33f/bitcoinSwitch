@@ -26,7 +26,7 @@
 
 // The type of hardware timer used by the timer shot
 #ifndef ESP32CAM_OCCUPIED_TIMER
-#define ESP32CAM_OCCUPIED_TIMER       0
+#define ESP32CAM_OCCUPIED_TIMER       1
 #endif // !ESP32CAM_OCCUPIED_TIMER
 
 // Default stack size fo Timer-Shot task
@@ -37,10 +37,10 @@
 // When using the CORE_DEBUG_LEVEL macro switch to log the esp32cam class,
 // TAG is an empty string.
 #ifndef ESP32CAM_LOGE_TAG
-#define ESP32CAM_LOGE_TAG
+#define ESP32CAM_LOGE_TAG             "ESP32Cam"
 #endif // !ESP32CAM_LOGE_TAG
 #ifndef ESP32CAM_GLOBAL_IDENTIFIER
-#define ESP32CAM_GLOBAL_IDENTIFIER    "ESP32Cam"
+#define ESP32CAM_GLOBAL_IDENTIFIER    ESP32CAM_LOGE_TAG
 #endif // !ESP32CAM_GLOBAL_IDENTIFIER
 
 // Default extension for a exporting captured image.

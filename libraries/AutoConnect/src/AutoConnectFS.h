@@ -2,8 +2,8 @@
  * Predefined file system applied for AutoConnect usage.
  * @file AutoConnectFS.h
  * @author hieromon@gmail.com
- * @version  1.3.1
- * @date 2021-10-03
+ * @version  1.4.0
+ * @date 2022-09-20
  * @copyright  MIT license.
  */
 
@@ -18,10 +18,10 @@
 // and AUTOCONNECT_APPLIED_FILESYSTEM is assigned the global instance name.
 #if defined(ARDUINO_ARCH_ESP8266)
 #define AC_DEFAULT_FILESYSTEM 2
-#define AUTOCONECT_FS_INITIALIZATION
+#define AUTOCONNECT_FS_INITIALIZATION
 #elif defined(ARDUINO_ARCH_ESP32)
 #define AC_DEFAULT_FILESYSTEM 1
-#define AUTOCONECT_FS_INITIALIZATION  true
+#define AUTOCONNECT_FS_INITIALIZATION  true
 #endif
 
 #if !defined(AC_USE_SPIFFS) && !defined(AC_USE_LITTLEFS)
@@ -58,11 +58,30 @@ extern "C" {
 #include <esp_littlefs.h>
 }
 #define AUTOCONNECT_APPLIED_FILECLASS     fs::LittleFSFS
+
+// With ESP32 platform core version less 2.0, reverts the LittleFS class and
+// the exported instance to the ordinary LittleFS_esp32 library owns.
+#if !defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR<2
+#undef AUTOCONNECT_APPLIED_FILESYSTEM
+#define AUTOCONNECT_APPLIED_FILESYSTEM    LITTLEFS
+#undef AUTOCONNECT_APPLIED_FILECLASS
+#define AUTOCONNECT_APPLIED_FILECLASS     fs::LITTLEFSFS
+#endif
 #endif
 #endif
 
 // Deploy the file class for the AutoConnect scope.
 namespace AutoConnectFS {
+  // Types branching to be code commonly for the file system classes with
+  // ESP8266 and ESP32.
+  #if defined(ARDUINO_ARCH_ESP8266)
+  using SDClassT = SDClass;   // SD:File system class
+  using SDFileT = File;       // SD:File class
+  #elif defined(ARDUINO_ARCH_ESP32)
+  using SDClassT = fs::SDFS;
+  using SDFileT = SDFile;
+  #endif
+
   using FS = AUTOCONNECT_APPLIED_FILECLASS;
   inline bool _isMounted(AutoConnectFS::FS* filesystem) {
 #if defined(ARDUINO_ARCH_ESP8266)
@@ -73,7 +92,7 @@ namespace AutoConnectFS {
 #if AC_USE_FILESYSTEM == 1
     return esp_spiffs_mounted(NULL);
 #elif AC_USE_FILESYSTEM == 2
-    return (esp_littlefs_mounted(NULL) == ESP_OK);
+    return esp_littlefs_mounted(NULL);
 #endif
 #endif
   }

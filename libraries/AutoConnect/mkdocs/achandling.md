@@ -30,7 +30,7 @@ A list of commonly used functions to access AutoConnectElements with your Sketch
 
 - `[]` operator : Access to an AutoConnectElement by specified element name.
 - `getElement` function : Access to an AutoConnectElement by specified element name.
-- `as<>` function : Cast from a variant of `AutoConnectElemnet` type to an actual type such as `AutoConnectText` or `AutoConnectInput` etc. To access attributes that exist only in the actual type, it is necessary to convert from the `AutoConnectElement` type obtained with `[]` operator or `getElement` function.
+- `as<>` function : Cast from a variant of `AutoConnectElement` type to an actual type such as `AutoConnectText` or `AutoConnectInput` etc. To access attributes that exist only in the actual type, it is necessary to convert from the `AutoConnectElement` type obtained with `[]` operator or `getElement` function.
 
 See the section [Get AutoConnectElement from the AutoConnectAux](achandling.md#get-autoconnectelement-from-the-autoconnectaux) and the section [AutoConnectElements API](apielements.md) for usage examples and API specifications for each above function.
 
@@ -432,7 +432,7 @@ static const char AUX[] PROGMEM = R("
 AutoConnect    portal;
 AutoConnectAux page;
 
-String onPage(AutoConectAux& aux, PageArgument& args) {
+String onPage(AutoConnectAux& aux, PageArgument& args) {
   AutoConnectSubmit& send = aux["send"].as<AutoConnectSubmit>();
   if (WiFi.isConnected())
     send.enable = (WiFi.getMode() == WIFI_STA);
@@ -847,7 +847,31 @@ portal.on("/echo", [](AutoConnectAux& aux, PageArgument& args) {
 portal.begin();
 ```
 
-### <i class="fa fa-wrench"></i> Transfer of input values ​​across pages
+### <i class="fa fa-wrench"></i> Get AutoConnectElement values from the transition source
+
+Usually, the page transition called by the custom web page handler will have an HTTP request directed to the destination URL. Its HTTP request has parameters enclosed by the POST method, all of which are AutoConnectElements placed on the transition source page. On the other hand, the custom web page handler's first argument points to AutoConnectAux after the transition, so the handler cannot access the AutoConnectElement values placed at the transition source using the first argument.
+
+Custom Web paga handler has two ways to access AutoConnectElements placed on the transition source page: combining the [AutoConnect::where](api.md#where) and [AutoConnect::aux](api.md#aux) functions or using the [AutoConnectAux::referer](apiaux.md#referer) function. The following code snippet shows the difference between the two methods of identifying the `input1` AutoConnectInput with the `/echo` page handler after the transition based on the `/hello` page described above.
+
+```cpp hl_lines="2"
+portal.on("/echo", [](AutoConnectAux& aux, PageArgument& args) {
+  AutoConnectAux&   ac_hello = *portal.aux(portal.where());
+  AutoConnectInput& ac_input1 = ac_hello["input1"].as<AutoConnectInput>();
+  Serial.println(ac_input1.value);
+  return String();  
+});
+```
+
+```cpp hl_lines="2"
+portal.on("/echo", [](AutoConnectAux& aux, PageArgument& args) {
+  AutoConnectAux&   ac_hello = portal.referer();
+  AutoConnectInput& ac_input1 = ac_hello["input1"].as<AutoConnectInput>();
+  Serial.println(ac_input1.value);
+  return String();  
+});
+```
+
+### <i class="fa fa-wrench"></i> Transfer of input values across pages
 
 Since v1.0.0, AutoConnect supports a new attribute with each element that allows automatic transfer of input values across pages without sketching. AutoConnect will copy the input value of the elements declared as [global](apielements.md#global_2) to the same-named global elements on a different custom Web pages at the page transition timing.
 

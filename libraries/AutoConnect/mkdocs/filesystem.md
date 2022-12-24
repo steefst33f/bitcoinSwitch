@@ -7,7 +7,7 @@ There are two file systems for utilizing the onboard flash on the ESP8266 or the
 #define AC_USE_LITTLEFS
 ```
 
-The `AC_USE_SPIFFS` and `AC_USE_LITTLEFS` macros declare which file system to apply. Their definitions are contradictory to each other and you **cannot activate both at the same time**.
+The [`AC_USE_SPIFFS`](https://github.com/Hieromon/AutoConnect/blob/master/src/AutoConnectDefs.h#L61) and [`AC_USE_LITTLEFS`](https://github.com/Hieromon/AutoConnect/blob/master/src/AutoConnectDefs.h#L62) macros declare which file system to apply. Their definitions are contradictory to each other and you **cannot activate both at the same time**.
 
 Each platform supported by AutoConnect has a default file system, which is LittleFS for ESP8266 and SPIFFS for ESP32. Neither `AC_USE_SPIFFS` nor `AC_USE_LITTLE_FS` needs to be explicitly defined as long as you use the default file system. The default file system for each platform is assumed.
 
@@ -43,7 +43,7 @@ platform = espressif8266
 board = esp_wroom_02
 framework = arduino
 lib_extra_dirs = ~/Documents/Arduino/libraries
-lib_ldf_mode = deep
+lib_ldf_mode = deep+
 build_flags =
     -DAC_USE_SPIFFS
     -DPB_USE_SPIFFS
@@ -54,7 +54,7 @@ monitor_speed = 115200
 The [`build_flags`](https://docs.platformio.org/en/latest/projectconf/section_env_build.html#build-flags) as [build options](https://docs.platformio.org/en/latest/projectconf/section_env_build.html#build-options) allows PlatformIO can provide preprocessor macro definitions. `-D name` for [`build_flags`](https://docs.platformio.org/en/latest/projectconf/section_env_build.html#build-flags), which specifies a predefined content, is treated as 1 equal to the `#define` directive.
 
 !!! hint "Library dependency search with PlatformIO"
-    If `#include <LITTLEFS.h>` becomes **Not Found** with PlatformIO built, try specifying [`lib_ldf_mode=deep`](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-ldf-mode) with [`platformio.ini`](https://docs.platformio.org/en/latest/projectconf/index.html). Due to the deep nesting by preprocessor instructions, the include file cannot be detected by the [chain mode](https://docs.platformio.org/en/latest/librarymanager/ldf.html#dependency-finder-mode) (nested include search) of PlatformIO's [Library Dependency Finder](https://docs.platformio.org/en/latest/librarymanager/ldf.html#library-dependency-finder-ldf). See also [FAQ](faq.md#compilation-error-due-to-file-system-header-file-not-found).
+    If `#include <LITTLEFS.h>` becomes **Not Found** with PlatformIO built, try specifying [`lib_ldf_mode=deep+`](https://docs.platformio.org/en/latest/projectconf/section_env_library.html#lib-ldf-mode) with [`platformio.ini`](https://docs.platformio.org/en/latest/projectconf/index.html). Due to the deep nesting by preprocessor instructions, the include file cannot be detected by the [chain mode](https://docs.platformio.org/en/latest/librarymanager/ldf.html#dependency-finder-mode) (nested include search) of PlatformIO's [Library Dependency Finder](https://docs.platformio.org/en/latest/librarymanager/ldf.html#library-dependency-finder-ldf). See also [FAQ](faq.md#compilation-error-due-to-file-system-header-file-not-found).
 
 !!! hint "LittleFS for ESP8266 with PlatformIO"
     The SPIFFS file system is used by default in order to keep legacy projects compatible. To choose LittleFS as the file system with ESP8266 platform, it should be explicitly specified using [`board_build.filesystem`](https://docs.platformio.org/en/latest/platforms/espressif8266.html?highlight=filesystem#using-filesystem) option in `platformio.ini` as follows:    
@@ -283,3 +283,37 @@ This final sketch consists of four components:
         It is a fault often found in careless sketches. An HTTP request is sent to the ESP8266 module each time you interact with the AutoConnect menu from the client browser. The request is properly answered by the [AutoConnect::handleClient](api.md#handleclient) function. The delay function in the loop obstructs the flow of its processing. Remember that the sketching process will be suspended for the time period you specify by the delay.
 
 - **`/set` custom web page handler**: It is named `onSet` function in above sketch. The `onSet` handler retrieves PWM settings using ArduinoJson [deserialization](https://arduinojson.org/v6/api/json/deserializejson/) from the uploaded `param.json` file. Each fetched setting value is stored in each global variable. The loop function refers to that value to achieve PWM pulse control.
+
+## Adapts the sketch to the selected file system in AutoConnect
+
+AutoConnect determines the appropriate file system instance according to the **AC_USE_SPIFFS** or **AC_USE_LITTLEFS** macro definition. This determination is made by the c++ preprocessor when the sketch is built. It then exports a macro definition that identifies the determined file system. Its macro definition allows the sketch to reference a valid file system after including the `AutoConnect.h` header file.
+
+The following two macro definitions, which can be referenced after including the AutoConnect.h header file, help the sketch choose the appropriate file system.
+
+- **AUTOCONNECT_USE_SPIFFS**: AutoConnect uses SPIFFS. The sketch should include `SPIFFS.h`. Also, the file system instance is `SPIFFS`.
+- **AUTOCONNECT_USE_LITTLEFS**: AutoConnect uses LITTLEFS. The sketch should include `LittleFS.h`. Also, the file system instance is `LittleFS`.
+
+Combining the c++ preprocessor directives with the two macro definitions above, you can write a common sketch code for both SPIFFS and LittleFS, as shown in the code as follows:
+
+```cpp hl_lines="3"
+#include <AutoConnect.h>
+
+#ifdef AUTOCONNECT_USE_LITTLEFS
+#include <LittleFS.h>
+#if defined(ARDUINO_ARCH_ESP8266)
+FS& FlashFS = LittleFS;
+#elif defined(ARDUINO_ARCH_ESP32)
+fs::LittleFSFS& FlashFS = LittleFS;
+#endif
+#else
+#include <FS.h>
+#include <SPIFFS.h>
+fs::SPIFFSFS& FlashFS = SPIFFS;
+#endif
+
+void setup() {
+  ...
+  FlashFS.begin();
+  ...
+}
+```

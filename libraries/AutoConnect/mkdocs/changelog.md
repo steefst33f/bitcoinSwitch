@@ -1,3 +1,87 @@
+### [1.4.0] Nov. 20, 2022
+
+#### Enhancements
+
+- Custom web page related features were decoupled to allow for two different configurations, AutoConnectCore and AutoConnect. AutoConnectCore reduces memory consumption by focusing only on WiFi connectivity utilities. See [Reducing Binary Size](basicusage.md#reducing-binary-size) chapter in the AutoConnect documentation for more information.
+- Supports credentials backup and restoration.
+- Added an AutoConnect::getCurrentCredential function.
+- Added an AutoConnectAux::referer function.
+- Added an AutoConnectConfig::preserveIP setting.
+- Added the WebSocketServer example.
+- Allow navigate to a custom URL once a WiFi connection is established.
+- Revised mqttRSSI examples program structure.
+
+#### Fix
+
+- Fixed updateserver.py script security vulnerability.
+
+---
+### [1.3.7] Aug. 20, 2022
+
+#### Fix
+
+- Fixed an authentication failure in Captive Portal state.
+- Fixed loss of current SSID.
+
+---
+### [1.3.6] Jul. 26, 2022
+
+#### Fix
+
+- Fixed OTA being incomplete.
+
+---
+### [1.3.5] Jun. 03, 2022
+
+#### Fix
+
+- Fixed Fixed OTA exit not being called.
+- Fixed an ambiguous type call with IPAddress.
+- Fixed loss of response due to OTA session reset occurrence.
+- Made fit the mqttRSSI examples to ThingSpeak's updated channel authentication.
+
+!!! info "For ESP-IDF 4.4 with Arduino ESP32 Core"
+    AutoConnect 1.3.5 is the version compatible with both ESP-IDF 4.4 and ESP-IDF 3.3. It is recommended to use Arduino esp32 core 1.0.6 for ESP-IDF 3.3 based and Arduino esp32 core 2.0.3 or later for ESP-IDF 4.4 based.  
+    If you are using PlatformIO as your development platform, you can select any of these two versions by specifying them in **platformio.ini** file.
+    
+    - For ESP-IDF 4.4 with Arduino ESP32 Core 2.0.3
+    
+    ```ini
+    framework = arduino
+    platform = espressif32@4.4.0
+    ```
+    
+    - For ESO-IDF 3.3 with Arduino ESP32 Core 1.0.6
+    
+    ```ini
+    framework = arduino
+    platform = espressif32@3.5.0
+    ```
+
+---
+### [1.3.4] Mar. 02, 2022
+
+#### Enhancements
+
+- Supports [LittleFS_esp32](https://github.com/lorol/LITTLEFS) legacy library with ESP32 Arduino core 1.0.6 or less.
+- Added enablement of credentials removal function with Open SSIDs menu.
+- Migrate the CI platform to GitHub actions.
+
+#### Fix
+
+- Fixed AutoConnectOTA crashing if there is no OTA partition.
+- Fixed AutoConnectUpdate crashing if there is no OTA partition.
+
+---
+### [1.3.3] Jan. 25, 2022
+
+#### Fix
+
+- Fixed the missing initialization of MQTT parameter settings of mqttRSSI.ino example sketch.
+- Reverted the MQTT API endpoint of Thingspeak.com in the mqttRSSI example sketches.
+- Changed ESP32Cam XCLK to be attenuated to avoid interference with WiFi signals.
+
+---
 ### [1.3.2] Jan. 1, 2022
 
 #### Enhancements

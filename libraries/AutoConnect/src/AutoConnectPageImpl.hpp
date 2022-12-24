@@ -1,11 +1,14 @@
 /**
- *  AutoConnect portal site web page implementation.
- *  @file   AutoConnectPage.cpp
- *  @author hieromon@gmail.com
- *  @version    1.3.2
- *  @date   2021-11-24
- *  @copyright  MIT license.
+ * AutoConnect portal site web page implementation.
+ * @file AutoConnectPage.cpp
+ * @author hieromon@gmail.com
+ * @version 1.4.0
+ * @date 2022-07-27
+ * @copyright MIT license.
  */
+
+#include <type_traits>
+#include "AutoConnectCore.hpp"
 
 #if defined(ARDUINO_ARCH_ESP8266)
 #include <ESP8266WiFi.h>
@@ -17,12 +20,10 @@ extern "C" {
 #include <WiFi.h>
 #define ENC_TYPE_NONE WIFI_AUTH_OPEN
 #endif
-#include "AutoConnect.h"
-#include "AutoConnectPage.h"
-#include "AutoConnectCredential.h"
 
 /**< Basic CSS common to all pages */
-const char AutoConnect::_CSS_BASE[] PROGMEM = {
+template<typename T>
+const char AutoConnectCore<T>::_CSS_BASE[] PROGMEM = {
   "html{"
     "font-family:Helvetica,Arial,sans-serif;"
     "font-size:16px;"
@@ -99,7 +100,8 @@ const char AutoConnect::_CSS_BASE[] PROGMEM = {
 };
 
 /**< non-marked list for UL */
-const char AutoConnect::_CSS_UL[] PROGMEM = {
+template<typename T>
+const char AutoConnectCore<T>::_CSS_UL[] PROGMEM = {
   ".noorder,.exp{"
     "padding:0;"
     "list-style:none;"
@@ -119,7 +121,7 @@ const char AutoConnect::_CSS_UL[] PROGMEM = {
     "-webkit-appearance:checkbox"
   "}"
   ".noorder input[type=\"radio\"]{"
-    "margin-right:0.5em;"
+    "cursor:pointer;"
     "-moz-appearance:radio;"
     "-webkit-appearance:radio"
   "}"
@@ -140,7 +142,8 @@ const char AutoConnect::_CSS_UL[] PROGMEM = {
 };
 
 /**< Image icon for inline expansion, the lock mark. */
-const char AutoConnect::_CSS_ICON_LOCK[] PROGMEM = {
+template<typename T>
+const char AutoConnectCore<T>::_CSS_ICON_LOCK[] PROGMEM = {
   ".img-lock{"
     "width:22px;"
     "height:22px;"
@@ -150,8 +153,22 @@ const char AutoConnect::_CSS_ICON_LOCK[] PROGMEM = {
   "}"
 };
 
+/**< Image icon for inline expansion, the trash mark. */
+template<typename T>
+const char AutoConnectCore<T>::_CSS_ICON_TRASH[] PROGMEM = {
+  ".img-trash{"
+    "width:22px;"
+    "height:22px;"
+    "margin-top:14px;"
+    "float:right;"
+    "cursor:pointer;"
+    "background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV/TSkUqDnYQcQhSnSyIijpKFYtgobQVWnUwufQLmjQkKS6OgmvBwY/FqoOLs64OroIg+AHi6OSk6CIl/i8ptIjx4Lgf7+497t4BQqPCVDMwDqiaZaTiMTGbWxWDrxAQRAAzGJaYqSfSixl4jq97+Ph6F+VZ3uf+HL1K3mSATySeY7phEW8QT29aOud94jArSQrxOfGYQRckfuS67PIb56LDAs8MG5nUPHGYWCx2sNzBrGSoxFPEEUXVKF/Iuqxw3uKsVmqsdU/+wlBeW0lzneYQ4lhCAkmIkFFDGRVYiNKqkWIiRfsxD/+g40+SSyZXGYwcC6hCheT4wf/gd7dmYXLCTQrFgK4X2/4YAYK7QLNu29/Htt08AfzPwJXW9lcbwOwn6fW2FjkC+raBi+u2Ju8BlzvAwJMuGZIj+WkKhQLwfkbflAP6b4GeNbe31j5OH4AMdbV8AxwcAqNFyl73eHd3Z2//nmn19wONxHKyvZQ4mgAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAAN1wAADdcBQiibeAAAALdJREFUOMvt1KEKAkEQBuBPMWkzWsRosWg2WEw2wTfQ6LNYfROLwSxWo81o02LQMsJxcJ4KguD9MOzMv8M/u8PsUqDAf2CMM25h5+CeopSzX8MBa6yCG2KAVhR5S3iDKuohsMcl9qpoR8FT8P20QCVDeIc5ljhm5DQwxeKdvnajn91ELOWnc146cbrIFr2Ik34myt8apUL4N4T3mMWa9J8ib9xG6OCKSXAPv/nJTUrxrG85tsn6Fu6nuijCLc4LEwAAAABJRU5ErkJggg==) no-repeat"
+  "}"
+};
+
 /**< INPUT button and submit style */
-const char AutoConnect::_CSS_INPUT_BUTTON[] PROGMEM = {
+template<typename T>
+const char AutoConnectCore<T>::_CSS_INPUT_BUTTON[] PROGMEM = {
   "input[type=\"button\"],input[type=\"submit\"],button[type=\"submit\"],button[type=\"button\"]{"
     "padding:8px 0.5em;"
     "font-weight:bold;"
@@ -159,7 +176,8 @@ const char AutoConnect::_CSS_INPUT_BUTTON[] PROGMEM = {
     "color:#fff;"
     "border:1px solid;"
     "border-radius:2px;"
-    "margin-top:12px"
+    "margin-top:12px;"
+    "cursor:pointer"
   "}"
   "input[type=\"button\"],button[type=\"button\"]{"
     "background-color:#1b5e20;"
@@ -174,7 +192,8 @@ const char AutoConnect::_CSS_INPUT_BUTTON[] PROGMEM = {
     "width:auto"
   "}"
   "#sb[type=\"submit\"]{"
-    "width:15em"
+    "padding:8px 0;"
+    "width:13em"
   "}"
   "input[type=\"submit\"],button[type=\"submit\"]{"
     "padding:8px 30px;"
@@ -189,7 +208,8 @@ const char AutoConnect::_CSS_INPUT_BUTTON[] PROGMEM = {
 };
 
 /**< INPUT text style */
-const char AutoConnect::_CSS_INPUT_TEXT[] PROGMEM = {
+template<typename T>
+const char AutoConnectCore<T>::_CSS_INPUT_TEXT[] PROGMEM = {
   "input[type=\"text\"],input[type=\"password\"],input[type=\"number\"],.aux-page select{"
     "background-color:#fff;"
     "border:1px solid #ccc;"
@@ -232,11 +252,13 @@ const char AutoConnect::_CSS_INPUT_TEXT[] PROGMEM = {
   ".aux-page label{"
     "display:inline;"
     "padding:10px 0.5em;"
+    "cursor:pointer"
   "}"
 };
 
 /**< TABLE style */
-const char AutoConnect::_CSS_TABLE[] PROGMEM = {
+template<typename T>
+const char AutoConnectCore<T>::_CSS_TABLE[] PROGMEM = {
   "table{"
     "border-collapse:collapse;"
     "border-spacing:0;"
@@ -290,7 +312,8 @@ const char AutoConnect::_CSS_TABLE[] PROGMEM = {
 };
 
 /**< SVG animation for spinner */
-const char AutoConnect::_CSS_SPINNER[] PROGMEM = {
+template<typename T>
+const char AutoConnectCore<T>::_CSS_SPINNER[] PROGMEM = {
   ".spinner{"
     "width:40px;"
     "height:40px;"
@@ -330,7 +353,8 @@ const char AutoConnect::_CSS_SPINNER[] PROGMEM = {
 
 /**< Common menu bar. This style quotes LuxBar. */
 /**< balzss/luxbar is licensed under the MIT License https://github.com/balzss/luxbar */
-const char AutoConnect::_CSS_LUXBAR[] PROGMEM = {
+template<typename T>
+const char AutoConnectCore<T>::_CSS_LUXBAR[] PROGMEM = {
   ".lb-fixed{"
     "width:100%;"
     "position:fixed;"
@@ -518,7 +542,8 @@ const char AutoConnect::_CSS_LUXBAR[] PROGMEM = {
 };
 
 /**< Common html document header. */
-const char AutoConnect::_ELM_HTML_HEAD[] PROGMEM = {
+template<typename T>
+const char AutoConnectCore<T>::_ELM_HTML_HEAD[] PROGMEM = {
   "<!DOCTYPE html>"
   "<html>"
   "<head>"
@@ -526,7 +551,8 @@ const char AutoConnect::_ELM_HTML_HEAD[] PROGMEM = {
 };
 
 /**< LuxBar menu element. */
-const char  AutoConnect::_ELM_MENU_PRE[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_ELM_MENU_PRE[] PROGMEM = {
   "<header id=\"lb\" class=\"lb-fixed\">"
     "<input type=\"checkbox\" class=\"lb-cb\" id=\"lb-cb\"/>"
     "<div class=\"lb-menu lb-menu-right lb-menu-material\">"
@@ -538,11 +564,8 @@ const char  AutoConnect::_ELM_MENU_PRE[] PROGMEM = {
         "MENU_LIST"
 };
 
-const char  AutoConnect::_ELM_MENU_AUX[] PROGMEM = {
-        "{{AUX_MENU}}"
-};
-
-const char  AutoConnect::_ELM_MENU_POST[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_ELM_MENU_POST[] PROGMEM = {
         "MENU_HOME"
         "MENU_DEVINFO"
       "</ul>"
@@ -554,7 +577,8 @@ const char  AutoConnect::_ELM_MENU_POST[] PROGMEM = {
 };
 
 /**< The 404 page content. */
-const char  AutoConnect::_PAGE_404[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_PAGE_404[] PROGMEM = {
   "{{HEAD}}"
     "<title>" AUTOCONNECT_PAGETITLE_NOTFOUND "</title>"
   "</head>"
@@ -565,7 +589,8 @@ const char  AutoConnect::_PAGE_404[] PROGMEM = {
 };
 
 /**< The page that started the reset. */
-const char  AutoConnect::_PAGE_RESETTING[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_PAGE_RESETTING[] PROGMEM = {
   "{{HEAD}}"
     "<meta http-equiv=\"refresh\" content=\"{{UPTIME}};url={{BOOTURI}}\">"
     "<title>" AUTOCONNECT_PAGETITLE_RESETTING "</title>"
@@ -582,7 +607,8 @@ const char  AutoConnect::_PAGE_RESETTING[] PROGMEM = {
 };
 
 /**< AutoConnect portal page. */
-const char  AutoConnect::_PAGE_STAT[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_PAGE_STAT[] PROGMEM = {
   "{{HEAD}}"
     "<title>" AUTOCONNECT_PAGETITLE_STATISTICS "</title>"
     "<style type=\"text/css\">"
@@ -664,7 +690,8 @@ const char  AutoConnect::_PAGE_STAT[] PROGMEM = {
 };
 
 /**< A page that specifies the new configuration. */
-const char  AutoConnect::_PAGE_CONFIGNEW[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_PAGE_CONFIGNEW[] PROGMEM = {
   "{{HEAD}}"
     "<title>" AUTOCONNECT_PAGETITLE_CONFIG "</title>"
     "<style type=\"text/css\">"
@@ -722,12 +749,14 @@ const char  AutoConnect::_PAGE_CONFIGNEW[] PROGMEM = {
 };
 
 /**< A page that reads stored authentication information and starts connection. */
-const char  AutoConnect::_PAGE_OPENCREDT[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_PAGE_OPENCREDT[] PROGMEM = {
   "{{HEAD}}"
     "<title>" AUTOCONNECT_PAGETITLE_CREDENTIALS "</title>"
     "<style type=\"text/css\">"
       "{{CSS_BASE}}"
       "{{CSS_ICON_LOCK}}"
+      "{{CSS_ICON_TRASH}}"
       "{{CSS_INPUT_BUTTON}}"
       "{{CSS_LUXBAR}}"
     "</style>"
@@ -738,17 +767,21 @@ const char  AutoConnect::_PAGE_OPENCREDT[] PROGMEM = {
       "{{MENU_AUX}}"
       "{{MENU_POST}}"
       "<div class=\"base-panel\">"
-        "<form action=\"" AUTOCONNECT_URI_CONNECT "\" method=\"post\">"
+        "<form id=\"_sid\" action=\"" AUTOCONNECT_URI_CONNECT "\" method=\"post\">"
           "{{OPEN_SSID}}"
         "</form>"
       "</div>"
     "</div>"
+    "<script type=\"text/javascript\">"
+      "function crdel(e){if(confirm(`${e} " AUTOCONNECT_TEXT_DELETECREDENTIAL "`)){var t=document.getElementById('_sid');t.setAttribute('action','" AUTOCONNECT_URI_DELETE "');var i=document.createElement('input');i.setAttribute('type','hidden'),i.setAttribute('name','del'),i.setAttribute('value',e),t.appendChild(i),t.submit()}}"
+    "</script>"
   "</body>"
   "</html>"
 };
 
 /**< A page that informs during a connection attempting. */
-const char  AutoConnect::_PAGE_CONNECTING[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_PAGE_CONNECTING[] PROGMEM = {
   "{{REQ}}"
   "{{HEAD}}"
     "<title>" AUTOCONNECT_PAGETITLE_CONNECTING "</title>"
@@ -777,7 +810,8 @@ const char  AutoConnect::_PAGE_CONNECTING[] PROGMEM = {
 };
 
 /**< A page announcing that a connection has been established. */
-const char  AutoConnect::_PAGE_SUCCESS[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_PAGE_SUCCESS[] PROGMEM = {
   "{{HEAD}}"
     "<title>" AUTOCONNECT_PAGETITLE_STATISTICS "</title>"
     "<style type=\"text/css\">"
@@ -830,7 +864,8 @@ const char  AutoConnect::_PAGE_SUCCESS[] PROGMEM = {
 };
 
 /**< A response page for connection failed. */
-const char  AutoConnect::_PAGE_FAIL[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_PAGE_FAIL[] PROGMEM = {
   "{{HEAD}}"
     "<title>" AUTOCONNECT_PAGETITLE_CONNECTIONFAILED "</title>"
     "<style type=\"text/css\">"
@@ -860,7 +895,8 @@ const char  AutoConnect::_PAGE_FAIL[] PROGMEM = {
 };
 
 /**< A response page for disconnected from the AP. */
-const char  AutoConnect::_PAGE_DISCONN[] PROGMEM = {
+template<typename T>
+const char  AutoConnectCore<T>::_PAGE_DISCONN[] PROGMEM = {
   "{{DISCONNECT}}"
   "{{HEAD}}"
     "<title>" AUTOCONNECT_PAGETITLE_DISCONNECTED "</title>"
@@ -878,7 +914,8 @@ const char  AutoConnect::_PAGE_DISCONN[] PROGMEM = {
   "</html>"
 };
 
-uint32_t AutoConnect::_getChipId() {
+template<typename T>
+uint32_t AutoConnectCore<T>::_getChipId() {
 #if defined(ARDUINO_ARCH_ESP8266)
   return ESP.getChipId();
 #elif defined(ARDUINO_ARCH_ESP32)
@@ -888,7 +925,8 @@ uint32_t AutoConnect::_getChipId() {
 #endif
 }
 
-uint32_t AutoConnect::_getFlashChipRealSize() {
+template<typename T>
+uint32_t AutoConnectCore<T>::_getFlashChipRealSize() {
 #if defined(ARDUINO_ARCH_ESP8266)
   return ESP.getFlashChipRealSize();
 #elif defined(ARDUINO_ARCH_ESP32)
@@ -896,54 +934,67 @@ uint32_t AutoConnect::_getFlashChipRealSize() {
 #endif
 }
 
-String AutoConnect::_token_CSS_BASE(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CSS_BASE(PageArgument& args) {
   AC_UNUSED(args);
   return String(FPSTR(_CSS_BASE));
 }
 
-String AutoConnect::_token_CSS_ICON_LOCK(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CSS_ICON_LOCK(PageArgument& args) {
   AC_UNUSED(args);
   return String(FPSTR(_CSS_ICON_LOCK));
 }
 
-String AutoConnect::_token_CSS_INPUT_BUTTON(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CSS_ICON_TRASH(PageArgument& args) {
+  AC_UNUSED(args);
+  return (_apConfig.menuItems & AC_MENUITEM_DELETESSID) ? String(FPSTR(_CSS_ICON_TRASH)) : String("");
+}
+
+template<typename T>
+String AutoConnectCore<T>::_token_CSS_INPUT_BUTTON(PageArgument& args) {
   AC_UNUSED(args);
   return String(FPSTR(_CSS_INPUT_BUTTON));
 }
 
-String AutoConnect::_token_CSS_INPUT_TEXT(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CSS_INPUT_TEXT(PageArgument& args) {
   AC_UNUSED(args);
   return String(FPSTR(_CSS_INPUT_TEXT));
 }
 
-String AutoConnect::_token_CSS_LUXBAR(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CSS_LUXBAR(PageArgument& args) {
   AC_UNUSED(args);
   return String(FPSTR(_CSS_LUXBAR));
 }
 
-String AutoConnect::_token_CSS_SPINNER(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CSS_SPINNER(PageArgument& args) {
   AC_UNUSED(args);
   return String(FPSTR(_CSS_SPINNER));
 }
 
-String AutoConnect::_token_CSS_TABLE(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CSS_TABLE(PageArgument& args) {
   AC_UNUSED(args);
   return String(FPSTR(_CSS_TABLE));
 }
 
-String AutoConnect::_token_CSS_UL(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CSS_UL(PageArgument& args) {
   AC_UNUSED(args);
   return String(FPSTR(_CSS_UL));
 }
 
-String AutoConnect::_token_MENU_AUX(PageArgument& args) {
-  String  menuItem = String("");
-  if (_aux)
-    menuItem = _aux->_injectMenu(args);
-  return menuItem;
+template<typename T>
+String AutoConnectCore<T>::_token_MENU_AUX(PageArgument& args) {
+  return _mold_MENU_AUX(args);
 }
 
-String AutoConnect::_token_MENU_PRE(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_MENU_PRE(PageArgument& args) {
   String  currentMenu = FPSTR(_ELM_MENU_PRE);
   String  menuItem = _attachMenuItem(AC_MENUITEM_CONFIGNEW) +
                      _attachMenuItem(AC_MENUITEM_OPENSSIDS) +
@@ -956,7 +1007,8 @@ String AutoConnect::_token_MENU_PRE(PageArgument& args) {
   return currentMenu;
 }
 
-String AutoConnect::_token_MENU_POST(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_MENU_POST(PageArgument& args) {
   AC_UNUSED(args);
   String  postMenu = FPSTR(_ELM_MENU_POST);
   postMenu.replace(String(F("MENU_HOME")), _attachMenuItem(AC_MENUITEM_HOME));
@@ -965,29 +1017,34 @@ String AutoConnect::_token_MENU_POST(PageArgument& args) {
   return postMenu;
 }
 
-String AutoConnect::_token_AP_MAC(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_AP_MAC(PageArgument& args) {
   AC_UNUSED(args);
   uint8_t macAddress[6];
   WiFi.softAPmacAddress(macAddress);
-  return AutoConnect::_toMACAddressString(macAddress);
+  return AutoConnectCore<T>::_toMACAddressString(macAddress);
 }
 
-String AutoConnect::_token_BOOTURI(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_BOOTURI(PageArgument& args) {
   AC_UNUSED(args);
   return _getBootUri();
 }
 
-String AutoConnect::_token_CHANNEL(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CHANNEL(PageArgument& args) {
   AC_UNUSED(args);
   return String(WiFi.channel());
 }
 
-String AutoConnect::_token_CHIP_ID(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CHIP_ID(PageArgument& args) {
   AC_UNUSED(args);
   return String(_getChipId());
 }
 
-String AutoConnect::_token_CONFIG_STAIP(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CONFIG_STAIP(PageArgument& args) {
   AC_UNUSED(args);
   static const char _configIPList[] PROGMEM =
     "<li class=\"exp\">"
@@ -1001,7 +1058,7 @@ String AutoConnect::_token_CONFIG_STAIP(PageArgument& args) {
     { PSTR(AUTOCONNECT_PARAMID_STAIP), PSTR(AUTOCONNECT_PAGECONFIG_IPADDRESS) },
     { PSTR(AUTOCONNECT_PARAMID_GTWAY), PSTR(AUTOCONNECT_PAGECONFIG_GATEWAY) },
     { PSTR(AUTOCONNECT_PARAMID_NTMSK), PSTR(AUTOCONNECT_PAGECONFIG_NETMASK) },
-    { PSTR(AUTOCONNECT_PARAMID_DNS1), PSTR(AUTOCONNECT_PAGECONFIG_DNS2) },
+    { PSTR(AUTOCONNECT_PARAMID_DNS1), PSTR(AUTOCONNECT_PAGECONFIG_DNS1) },
     { PSTR(AUTOCONNECT_PARAMID_DNS2), PSTR(AUTOCONNECT_PAGECONFIG_DNS2) }
   };
   char  liCont[600];
@@ -1026,12 +1083,14 @@ String AutoConnect::_token_CONFIG_STAIP(PageArgument& args) {
   return String(liCont);
 }
 
-String AutoConnect::_token_CPU_FREQ(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CPU_FREQ(PageArgument& args) {
   AC_UNUSED(args);
   return String(ESP.getCpuFreqMHz());
 }
 
-String AutoConnect::_token_CURRENT_SSID(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_CURRENT_SSID(PageArgument& args) {
   AC_UNUSED(args);
   char  ssid_c[sizeof(station_config_t::ssid) + 1];
   *ssid_c = '\0';
@@ -1040,43 +1099,51 @@ String AutoConnect::_token_CURRENT_SSID(PageArgument& args) {
   return ssid;
 }
 
-String AutoConnect::_token_DBM(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_DBM(PageArgument& args) {
   AC_UNUSED(args);
   int32_t dBm = WiFi.RSSI();
   return (dBm == 31 ? String(F("N/A")) : String(dBm));
 }
 
-String AutoConnect::_token_ESTAB_SSID(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_ESTAB_SSID(PageArgument& args) {
   AC_UNUSED(args);
   return (WiFi.status() == WL_CONNECTED ? WiFi.SSID() : String(F("N/A")));
 }
 
-String AutoConnect::_token_FLASH_SIZE(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_FLASH_SIZE(PageArgument& args) {
   AC_UNUSED(args);
   return String(_getFlashChipRealSize());
 }
 
-String AutoConnect::_token_FREE_HEAP(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_FREE_HEAP(PageArgument& args) {
   AC_UNUSED(args);
   return String(_freeHeapSize);
 }
 
-String AutoConnect::_token_GATEWAY(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_GATEWAY(PageArgument& args) {
   AC_UNUSED(args);
   return WiFi.gatewayIP().toString();
 }
 
-String AutoConnect::_token_HEAD(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_HEAD(PageArgument& args) {
   AC_UNUSED(args);
   return String(FPSTR(_ELM_HTML_HEAD));
 }
 
-String AutoConnect::_token_HIDDEN_COUNT(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_HIDDEN_COUNT(PageArgument& args) {
   AC_UNUSED(args);
   return String(_hiddenSSIDCount);
 }
 
-String AutoConnect::_token_LIST_SSID(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_LIST_SSID(PageArgument& args) {
   // Obtain the page number to display.
   // When the display request is the first page, it will be obtained
   // from the scan results of the WiFiScan class if it has already been
@@ -1121,7 +1188,7 @@ String AutoConnect::_token_LIST_SSID(PageArgument& args) {
       // per page in the available SSID list.
       if (validCount >= page * AUTOCONNECT_SSIDPAGEUNIT_LINES && validCount <= (page + 1) * AUTOCONNECT_SSIDPAGEUNIT_LINES - 1) {
         if (++dispCount <= AUTOCONNECT_SSIDPAGEUNIT_LINES) {
-          snprintf_P(slBuf, bufSize - (slBuf - ssidList), (PGM_P)_ssidList, ssid.c_str(), AutoConnect::_toWiFiQuality((int32_t)WiFi.RSSI(i)), WiFi.channel(i), WiFi.encryptionType(i) != ENC_TYPE_NONE ? (PGM_P)_ssidEnc : "");
+          snprintf_P(slBuf, bufSize - (slBuf - ssidList), (PGM_P)_ssidList, ssid.c_str(), AutoConnectCore<T>::_toWiFiQuality((int32_t)WiFi.RSSI(i)), WiFi.channel(i), WiFi.encryptionType(i) != ENC_TYPE_NONE ? (PGM_P)_ssidEnc : "");
           slBuf += strlen(slBuf);
         }
       }
@@ -1146,36 +1213,48 @@ String AutoConnect::_token_LIST_SSID(PageArgument& args) {
   return ssidListStr;
 }
 
-String AutoConnect::_token_LOCAL_IP(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_LOCAL_IP(PageArgument& args) {
   AC_UNUSED(args);
   return WiFi.localIP().toString();
 }
 
-String AutoConnect::_token_NETMASK(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_NETMASK(PageArgument& args) {
   AC_UNUSED(args);
   return WiFi.subnetMask().toString();
 }
 
-String AutoConnect::_token_OPEN_SSID(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_OPEN_SSID(PageArgument& args) {
   AC_UNUSED(args);
-  static const char _ssidList[] PROGMEM = "<input id=\"sb\" type=\"submit\" name=\"%s\" value=\"%s\"><label class=\"slist\">%s</label>%s<br>";
+  static const char _ssidUndeleted[] PROGMEM = "<div style=\"color:red\">%s " AUTOCONNECT_TEXT_COULDNOTDELETED "</div>";
+  static const char _ssidList[] PROGMEM = "<input id=\"sb\" type=\"submit\" name=\"%s\" value=\"%s\"><label class=\"slist\">%s</label>%s%s<br>";
   static const char _ssidRssi[] PROGMEM = "%d&#037;&ensp;Ch.%d";
   static const char _ssidNA[]   PROGMEM = "N/A";
+  static const char _ssidTrsh[] PROGMEM = "<a onclick=\"crdel('%s')\" class=\"img-trash\"></a>";
   static const char _ssidLock[] PROGMEM = "<span class=\"img-lock\"></span>";
   static const char _ssidNull[] PROGMEM = "";
   String ssidList;
   station_config_t  entry;
-  char  slCont[176];
   char  rssiCont[32];
+  char  trash[80] = {'\0'};
+  char  slCont[sizeof(_ssidList) + sizeof(AUTOCONNECT_PARAMID_CRED) + sizeof(station_config_t::ssid) + sizeof(rssiCont) + sizeof(trash) + sizeof(_ssidLock)];
   AutoConnectCredential credit(_apConfig.boundaryOffset);
 
-  uint8_t creEntries = credit.entries();
-  if (creEntries > 0) {
-    ssidList = String("");
-    _scanCount = WiFi.scanNetworks(false, true);
+  if (_indelibleSSID.length()) {
+    char  indelible[82];
+
+    snprintf_P(indelible, sizeof(indelible), _ssidUndeleted, _indelibleSSID.c_str());
+    ssidList = String(indelible);
+    _indelibleSSID.clear();
   }
+
+  uint8_t creEntries = credit.entries();
+  if (creEntries > 0)
+    _scanCount = WiFi.scanNetworks(false, true);
   else
-    ssidList = String(F("<p><b>" AUTOCONNECT_TEXT_NOSAVEDCREDENTIALS "</b></p>"));
+    ssidList += String(F("<p><b>" AUTOCONNECT_TEXT_NOSAVEDCREDENTIALS "</b></p>"));
 
   for (uint8_t i = 0; i < creEntries; i++) {
     rssiCont[0] = '\0';
@@ -1189,37 +1268,44 @@ String AutoConnect::_token_OPEN_SSID(PageArgument& args) {
         // according to the AUTOCONNECT_APKEY_SSID definition, which is
         // either BSSID or SSID.
         _connectCh = WiFi.channel(sc);
-        snprintf_P(rssiCont, sizeof(rssiCont), (PGM_P)_ssidRssi, AutoConnect::_toWiFiQuality((int32_t)WiFi.RSSI(sc)), _connectCh);
+        snprintf_P(rssiCont, sizeof(rssiCont), (PGM_P)_ssidRssi, AutoConnectCore<T>::_toWiFiQuality((int32_t)WiFi.RSSI(sc)), _connectCh);
         rssiSym = rssiCont;
         if (WiFi.encryptionType(sc) != ENC_TYPE_NONE)
           ssidLock = _ssidLock;
         break;
       }
     }
-    snprintf_P(slCont, sizeof(slCont), (PGM_P)_ssidList, AUTOCONNECT_PARAMID_CRED, reinterpret_cast<char*>(entry.ssid), rssiSym, ssidLock);
+    if (_apConfig.menuItems & AC_MENUITEM_DELETESSID)
+      snprintf_P(trash, sizeof(trash), (PGM_P)_ssidTrsh, reinterpret_cast<char*>(entry.ssid));
+
+    snprintf_P(slCont, sizeof(slCont), (PGM_P)_ssidList, AUTOCONNECT_PARAMID_CRED, reinterpret_cast<char*>(entry.ssid), rssiSym, trash, ssidLock);
     ssidList += String(slCont);
   }
   return ssidList;
 }
 
-String AutoConnect::_token_SOFTAP_IP(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_SOFTAP_IP(PageArgument& args) {
   AC_UNUSED(args);
   return WiFi.softAPIP().toString();
 }
 
-String AutoConnect::_token_SSID_COUNT(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_SSID_COUNT(PageArgument& args) {
   AC_UNUSED(args);
   return String(_scanCount);
 }
 
-String AutoConnect::_token_STA_MAC(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_STA_MAC(PageArgument& args) {
   AC_UNUSED(args);
   uint8_t macAddress[6];
   WiFi.macAddress(macAddress);
-  return AutoConnect::_toMACAddressString(macAddress);
+  return AutoConnectCore<T>::_toMACAddressString(macAddress);
 }
 
-String AutoConnect::_token_STATION_STATUS(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_STATION_STATUS(PageArgument& args) {
   AC_UNUSED(args);
   PGM_P wlStatusSymbol = PSTR("");
   PGM_P wlStatusSymbols[] = {
@@ -1290,12 +1376,14 @@ String AutoConnect::_token_STATION_STATUS(PageArgument& args) {
   return String("(") + String(_rsConnect) + String(") ") + String(FPSTR(wlStatusSymbol));
 }
 
-String AutoConnect::_token_UPTIME(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_UPTIME(PageArgument& args) {
   AC_UNUSED(args);
   return String(_apConfig.uptime);
 }
 
-String AutoConnect::_token_WIFI_MODE(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_WIFI_MODE(PageArgument& args) {
   AC_UNUSED(args);
   PGM_P wifiMode;
   switch (WiFi.getMode()) {
@@ -1322,7 +1410,8 @@ String AutoConnect::_token_WIFI_MODE(PageArgument& args) {
   return String(FPSTR(wifiMode));
 }
 
-String AutoConnect::_token_WIFI_STATUS(PageArgument& args) {
+template<typename T>
+String AutoConnectCore<T>::_token_WIFI_STATUS(PageArgument& args) {
   AC_UNUSED(args);
   return String(WiFi.status());
 }
@@ -1332,7 +1421,8 @@ String AutoConnect::_token_WIFI_STATUS(PageArgument& args) {
  *  @param  item  An enumerated value for the generating item configured in AutoConnectConfig.
  *  @return HTML string of a li tag with the menu item.
  */
-String AutoConnect::_attachMenuItem(const AC_MENUITEM_t item) {
+template<typename T>
+String AutoConnectCore<T>::_attachMenuItem(const AC_MENUITEM_t item) {
   static const char _liTempl[]  PROGMEM = "<li class=\"lb-item\"%s><a href=\"%s\">%s</a></li>";
   PGM_P id = PSTR("");
   PGM_P link;
@@ -1384,7 +1474,8 @@ String AutoConnect::_attachMenuItem(const AC_MENUITEM_t item) {
  *  @retval true  A response page generated.
  *  @retval false Requested uri is not defined.
  */
-PageElement* AutoConnect::_setupPage(String& uri) {
+template<typename T>
+PageElement* AutoConnectCore<T>::_setupPage(String& uri) {
   PageElement *elm = new PageElement();
   bool  reqAuth = false;
 
@@ -1398,48 +1489,48 @@ PageElement* AutoConnect::_setupPage(String& uri) {
     reqAuth = true;
     _freeHeapSize = ESP.getFreeHeap();
     elm->setMold(FPSTR(_PAGE_STAT));
-    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnect::_token_HEAD, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnect::_token_CSS_BASE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_TABLE"), std::bind(&AutoConnect::_token_CSS_TABLE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnect::_token_CSS_LUXBAR, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnect::_token_MENU_PRE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnect::_token_MENU_AUX, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnect::_token_MENU_POST, this, std::placeholders::_1));
-    elm->addToken(FPSTR("ESTAB_SSID"), std::bind(&AutoConnect::_token_ESTAB_SSID, this, std::placeholders::_1));
-    elm->addToken(FPSTR("WIFI_MODE"), std::bind(&AutoConnect::_token_WIFI_MODE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("WIFI_STATUS"), std::bind(&AutoConnect::_token_WIFI_STATUS, this, std::placeholders::_1));
-    elm->addToken(FPSTR("LOCAL_IP"), std::bind(&AutoConnect::_token_LOCAL_IP, this, std::placeholders::_1));
-    elm->addToken(FPSTR("SOFTAP_IP"), std::bind(&AutoConnect::_token_SOFTAP_IP, this, std::placeholders::_1));
-    elm->addToken(FPSTR("GATEWAY"), std::bind(&AutoConnect::_token_GATEWAY, this, std::placeholders::_1));
-    elm->addToken(FPSTR("NETMASK"), std::bind(&AutoConnect::_token_NETMASK, this, std::placeholders::_1));
-    elm->addToken(FPSTR("AP_MAC"), std::bind(&AutoConnect::_token_AP_MAC, this, std::placeholders::_1));
-    elm->addToken(FPSTR("STA_MAC"), std::bind(&AutoConnect::_token_STA_MAC, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CHANNEL"), std::bind(&AutoConnect::_token_CHANNEL, this, std::placeholders::_1));
-    elm->addToken(FPSTR("DBM"), std::bind(&AutoConnect::_token_DBM, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CPU_FREQ"), std::bind(&AutoConnect::_token_CPU_FREQ, this, std::placeholders::_1));
-    elm->addToken(FPSTR("FLASH_SIZE"), std::bind(&AutoConnect::_token_FLASH_SIZE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CHIP_ID"), std::bind(&AutoConnect::_token_CHIP_ID, this, std::placeholders::_1));
-    elm->addToken(FPSTR("FREE_HEAP"), std::bind(&AutoConnect::_token_FREE_HEAP, this, std::placeholders::_1));
+    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnectCore<T>::_token_HEAD, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnectCore<T>::_token_CSS_BASE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_TABLE"), std::bind(&AutoConnectCore<T>::_token_CSS_TABLE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnectCore<T>::_token_CSS_LUXBAR, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnectCore<T>::_token_MENU_PRE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnectCore<T>::_token_MENU_AUX, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnectCore<T>::_token_MENU_POST, this, std::placeholders::_1));
+    elm->addToken(FPSTR("ESTAB_SSID"), std::bind(&AutoConnectCore<T>::_token_ESTAB_SSID, this, std::placeholders::_1));
+    elm->addToken(FPSTR("WIFI_MODE"), std::bind(&AutoConnectCore<T>::_token_WIFI_MODE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("WIFI_STATUS"), std::bind(&AutoConnectCore<T>::_token_WIFI_STATUS, this, std::placeholders::_1));
+    elm->addToken(FPSTR("LOCAL_IP"), std::bind(&AutoConnectCore<T>::_token_LOCAL_IP, this, std::placeholders::_1));
+    elm->addToken(FPSTR("SOFTAP_IP"), std::bind(&AutoConnectCore<T>::_token_SOFTAP_IP, this, std::placeholders::_1));
+    elm->addToken(FPSTR("GATEWAY"), std::bind(&AutoConnectCore<T>::_token_GATEWAY, this, std::placeholders::_1));
+    elm->addToken(FPSTR("NETMASK"), std::bind(&AutoConnectCore<T>::_token_NETMASK, this, std::placeholders::_1));
+    elm->addToken(FPSTR("AP_MAC"), std::bind(&AutoConnectCore<T>::_token_AP_MAC, this, std::placeholders::_1));
+    elm->addToken(FPSTR("STA_MAC"), std::bind(&AutoConnectCore<T>::_token_STA_MAC, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CHANNEL"), std::bind(&AutoConnectCore<T>::_token_CHANNEL, this, std::placeholders::_1));
+    elm->addToken(FPSTR("DBM"), std::bind(&AutoConnectCore<T>::_token_DBM, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CPU_FREQ"), std::bind(&AutoConnectCore<T>::_token_CPU_FREQ, this, std::placeholders::_1));
+    elm->addToken(FPSTR("FLASH_SIZE"), std::bind(&AutoConnectCore<T>::_token_FLASH_SIZE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CHIP_ID"), std::bind(&AutoConnectCore<T>::_token_CHIP_ID, this, std::placeholders::_1));
+    elm->addToken(FPSTR("FREE_HEAP"), std::bind(&AutoConnectCore<T>::_token_FREE_HEAP, this, std::placeholders::_1));
   }
   else if (uri == String(AUTOCONNECT_URI_CONFIG) && (_apConfig.menuItems & AC_MENUITEM_CONFIGNEW)) {
 
     // Setup /_ac/config
     reqAuth = true;
     elm->setMold(FPSTR(_PAGE_CONFIGNEW));
-    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnect::_token_HEAD, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnect::_token_CSS_BASE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_UL"), std::bind(&AutoConnect::_token_CSS_UL, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_ICON_LOCK"), std::bind(&AutoConnect::_token_CSS_ICON_LOCK, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_INPUT_BUTTON"), std::bind(&AutoConnect::_token_CSS_INPUT_BUTTON, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_INPUT_TEXT"), std::bind(&AutoConnect::_token_CSS_INPUT_TEXT, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnect::_token_CSS_LUXBAR, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnect::_token_MENU_PRE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnect::_token_MENU_AUX, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnect::_token_MENU_POST, this, std::placeholders::_1));
-    elm->addToken(FPSTR("LIST_SSID"), std::bind(&AutoConnect::_token_LIST_SSID, this, std::placeholders::_1));
-    elm->addToken(FPSTR("SSID_COUNT"), std::bind(&AutoConnect::_token_SSID_COUNT, this, std::placeholders::_1));
-    elm->addToken(FPSTR("HIDDEN_COUNT"), std::bind(&AutoConnect::_token_HIDDEN_COUNT, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CONFIG_IP"), std::bind(&AutoConnect::_token_CONFIG_STAIP, this, std::placeholders::_1));
+    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnectCore<T>::_token_HEAD, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnectCore<T>::_token_CSS_BASE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_UL"), std::bind(&AutoConnectCore<T>::_token_CSS_UL, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_ICON_LOCK"), std::bind(&AutoConnectCore<T>::_token_CSS_ICON_LOCK, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_INPUT_BUTTON"), std::bind(&AutoConnectCore<T>::_token_CSS_INPUT_BUTTON, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_INPUT_TEXT"), std::bind(&AutoConnectCore<T>::_token_CSS_INPUT_TEXT, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnectCore<T>::_token_CSS_LUXBAR, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnectCore<T>::_token_MENU_PRE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnectCore<T>::_token_MENU_AUX, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnectCore<T>::_token_MENU_POST, this, std::placeholders::_1));
+    elm->addToken(FPSTR("LIST_SSID"), std::bind(&AutoConnectCore<T>::_token_LIST_SSID, this, std::placeholders::_1));
+    elm->addToken(FPSTR("SSID_COUNT"), std::bind(&AutoConnectCore<T>::_token_SSID_COUNT, this, std::placeholders::_1));
+    elm->addToken(FPSTR("HIDDEN_COUNT"), std::bind(&AutoConnectCore<T>::_token_HIDDEN_COUNT, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CONFIG_IP"), std::bind(&AutoConnectCore<T>::_token_CONFIG_STAIP, this, std::placeholders::_1));
   }
   else if (uri == String(AUTOCONNECT_URI_CONNECT) && (_apConfig.menuItems & AC_MENUITEM_CONFIGNEW || _apConfig.menuItems & AC_MENUITEM_OPENSSIDS)) {
 
@@ -1447,90 +1538,99 @@ PageElement* AutoConnect::_setupPage(String& uri) {
     reqAuth = true;
     _menuTitle = FPSTR(AUTOCONNECT_MENUTEXT_CONNECTING);
     elm->setMold(FPSTR(_PAGE_CONNECTING));
-    elm->addToken(FPSTR("REQ"), std::bind(&AutoConnect::_induceConnect, this, std::placeholders::_1));
-    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnect::_token_HEAD, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnect::_token_CSS_BASE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_SPINNER"), std::bind(&AutoConnect::_token_CSS_SPINNER, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnect::_token_CSS_LUXBAR, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnect::_token_MENU_PRE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnect::_token_MENU_POST, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CUR_SSID"), std::bind(&AutoConnect::_token_CURRENT_SSID, this, std::placeholders::_1));
- }
+    elm->addToken(FPSTR("REQ"), std::bind(&AutoConnectCore<T>::_induceConnect, this, std::placeholders::_1));
+    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnectCore<T>::_token_HEAD, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnectCore<T>::_token_CSS_BASE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_SPINNER"), std::bind(&AutoConnectCore<T>::_token_CSS_SPINNER, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnectCore<T>::_token_CSS_LUXBAR, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnectCore<T>::_token_MENU_PRE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnectCore<T>::_token_MENU_POST, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CUR_SSID"), std::bind(&AutoConnectCore<T>::_token_CURRENT_SSID, this, std::placeholders::_1));
+  }
   else if (uri == String(AUTOCONNECT_URI_OPEN) && (_apConfig.menuItems & AC_MENUITEM_OPENSSIDS)) {
 
     // Setup /_ac/open
     reqAuth = true;
     elm->setMold(FPSTR(_PAGE_OPENCREDT));
-    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnect::_token_HEAD, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnect::_token_CSS_BASE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_ICON_LOCK"), std::bind(&AutoConnect::_token_CSS_ICON_LOCK, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_INPUT_BUTTON"), std::bind(&AutoConnect::_token_CSS_INPUT_BUTTON, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnect::_token_CSS_LUXBAR, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnect::_token_MENU_PRE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnect::_token_MENU_AUX, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnect::_token_MENU_POST, this, std::placeholders::_1));
-    elm->addToken(FPSTR("OPEN_SSID"), std::bind(&AutoConnect::_token_OPEN_SSID, this, std::placeholders::_1));
+    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnectCore<T>::_token_HEAD, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnectCore<T>::_token_CSS_BASE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_ICON_LOCK"), std::bind(&AutoConnectCore<T>::_token_CSS_ICON_LOCK, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_ICON_TRASH"), std::bind(&AutoConnectCore<T>::_token_CSS_ICON_TRASH, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_INPUT_BUTTON"), std::bind(&AutoConnectCore<T>::_token_CSS_INPUT_BUTTON, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnectCore<T>::_token_CSS_LUXBAR, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnectCore<T>::_token_MENU_PRE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnectCore<T>::_token_MENU_AUX, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnectCore<T>::_token_MENU_POST, this, std::placeholders::_1));
+    elm->addToken(FPSTR("OPEN_SSID"), std::bind(&AutoConnectCore<T>::_token_OPEN_SSID, this, std::placeholders::_1));
+  }
+  else if (uri == String(AUTOCONNECT_URI_DELETE) && (_apConfig.menuItems & AC_MENUITEM_OPENSSIDS) && (_apConfig.menuItems & AC_MENUITEM_DELETESSID)) {
+  
+    // Setup /_ac/del
+    reqAuth = true;
+    elm->setMold(FPSTR("{{DELREQ}}"));
+    elm->addToken(FPSTR("DELREQ"), std::bind(&AutoConnectCore<T>::_promptDeleteCredential, this, std::placeholders::_1));
   }
   else if (uri == String(AUTOCONNECT_URI_DISCON) && (_apConfig.menuItems & AC_MENUITEM_DISCONNECT)) {
 
     // Setup /_ac/disc
     _menuTitle = FPSTR(AUTOCONNECT_MENUTEXT_DISCONNECT);
     elm->setMold(FPSTR(_PAGE_DISCONN));
-    elm->addToken(FPSTR("DISCONNECT"), std::bind(&AutoConnect::_induceDisconnect, this, std::placeholders::_1));
-    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnect::_token_HEAD, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnect::_token_CSS_BASE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnect::_token_CSS_LUXBAR, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnect::_token_MENU_PRE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnect::_token_MENU_POST, this, std::placeholders::_1));
+    elm->addToken(FPSTR("DISCONNECT"), std::bind(&AutoConnectCore<T>::_induceDisconnect, this, std::placeholders::_1));
+    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnectCore<T>::_token_HEAD, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnectCore<T>::_token_CSS_BASE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnectCore<T>::_token_CSS_LUXBAR, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnectCore<T>::_token_MENU_PRE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnectCore<T>::_token_MENU_POST, this, std::placeholders::_1));
   }
   else if (uri == String(AUTOCONNECT_URI_RESET) && (_apConfig.menuItems & AC_MENUITEM_RESET)) {
 
     // Setup /_ac/reset
+    reqAuth = true;
     elm->setMold(FPSTR(_PAGE_RESETTING));
-    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnect::_token_HEAD, this, std::placeholders::_1));
-    elm->addToken(FPSTR("BOOTURI"), std::bind(&AutoConnect::_token_BOOTURI, this, std::placeholders::_1));
-    elm->addToken(FPSTR("UPTIME"), std::bind(&AutoConnect::_token_UPTIME, this, std::placeholders::_1));
-    elm->addToken(FPSTR("RESET"), std::bind(&AutoConnect::_induceReset, this, std::placeholders::_1));
+    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnectCore<T>::_token_HEAD, this, std::placeholders::_1));
+    elm->addToken(FPSTR("BOOTURI"), std::bind(&AutoConnectCore<T>::_token_BOOTURI, this, std::placeholders::_1));
+    elm->addToken(FPSTR("UPTIME"), std::bind(&AutoConnectCore<T>::_token_UPTIME, this, std::placeholders::_1));
+    elm->addToken(FPSTR("RESET"), std::bind(&AutoConnectCore<T>::_induceReset, this, std::placeholders::_1));
   }
   else if (uri == String(AUTOCONNECT_URI_RESULT)) {
 
     // Setup /_ac/result
     elm->setMold(FPSTR("{{RESULT}}"));
-    elm->addToken(FPSTR("RESULT"), std::bind(&AutoConnect::_invokeResult, this, std::placeholders::_1));
+    elm->addToken(FPSTR("RESULT"), std::bind(&AutoConnectCore<T>::_invokeResult, this, std::placeholders::_1));
   }
   else if (uri == String(AUTOCONNECT_URI_SUCCESS)) {
 
     // Setup /_ac/success
     elm->setMold(FPSTR(_PAGE_SUCCESS));
-    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnect::_token_HEAD, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnect::_token_CSS_BASE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_TABLE"), std::bind(&AutoConnect::_token_CSS_TABLE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnect::_token_CSS_LUXBAR, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnect::_token_MENU_PRE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnect::_token_MENU_AUX, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnect::_token_MENU_POST, this, std::placeholders::_1));
-    elm->addToken(FPSTR("ESTAB_SSID"), std::bind(&AutoConnect::_token_ESTAB_SSID, this, std::placeholders::_1));
-    elm->addToken(FPSTR("WIFI_MODE"), std::bind(&AutoConnect::_token_WIFI_MODE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("WIFI_STATUS"), std::bind(&AutoConnect::_token_WIFI_STATUS, this, std::placeholders::_1));
-    elm->addToken(FPSTR("LOCAL_IP"), std::bind(&AutoConnect::_token_LOCAL_IP, this, std::placeholders::_1));
-    elm->addToken(FPSTR("GATEWAY"), std::bind(&AutoConnect::_token_GATEWAY, this, std::placeholders::_1));
-    elm->addToken(FPSTR("NETMASK"), std::bind(&AutoConnect::_token_NETMASK, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CHANNEL"), std::bind(&AutoConnect::_token_CHANNEL, this, std::placeholders::_1));
-    elm->addToken(FPSTR("DBM"), std::bind(&AutoConnect::_token_DBM, this, std::placeholders::_1));
+    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnectCore<T>::_token_HEAD, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnectCore<T>::_token_CSS_BASE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_TABLE"), std::bind(&AutoConnectCore<T>::_token_CSS_TABLE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnectCore<T>::_token_CSS_LUXBAR, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnectCore<T>::_token_MENU_PRE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnectCore<T>::_token_MENU_AUX, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnectCore<T>::_token_MENU_POST, this, std::placeholders::_1));
+    elm->addToken(FPSTR("ESTAB_SSID"), std::bind(&AutoConnectCore<T>::_token_ESTAB_SSID, this, std::placeholders::_1));
+    elm->addToken(FPSTR("WIFI_MODE"), std::bind(&AutoConnectCore<T>::_token_WIFI_MODE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("WIFI_STATUS"), std::bind(&AutoConnectCore<T>::_token_WIFI_STATUS, this, std::placeholders::_1));
+    elm->addToken(FPSTR("LOCAL_IP"), std::bind(&AutoConnectCore<T>::_token_LOCAL_IP, this, std::placeholders::_1));
+    elm->addToken(FPSTR("GATEWAY"), std::bind(&AutoConnectCore<T>::_token_GATEWAY, this, std::placeholders::_1));
+    elm->addToken(FPSTR("NETMASK"), std::bind(&AutoConnectCore<T>::_token_NETMASK, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CHANNEL"), std::bind(&AutoConnectCore<T>::_token_CHANNEL, this, std::placeholders::_1));
+    elm->addToken(FPSTR("DBM"), std::bind(&AutoConnectCore<T>::_token_DBM, this, std::placeholders::_1));
   }
   else if (uri == String(AUTOCONNECT_URI_FAIL)) {
 
     // Setup /_ac/fail
     _menuTitle = FPSTR(AUTOCONNECT_MENUTEXT_FAILED);
     elm->setMold(FPSTR(_PAGE_FAIL));
-    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnect::_token_HEAD, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnect::_token_CSS_BASE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_TABLE"), std::bind(&AutoConnect::_token_CSS_TABLE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnect::_token_CSS_LUXBAR, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnect::_token_MENU_PRE, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnect::_token_MENU_AUX, this, std::placeholders::_1));
-    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnect::_token_MENU_POST, this, std::placeholders::_1));
-    elm->addToken(FPSTR("STATION_STATUS"), std::bind(&AutoConnect::_token_STATION_STATUS, this, std::placeholders::_1));
+    elm->addToken(FPSTR("HEAD"), std::bind(&AutoConnectCore<T>::_token_HEAD, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_BASE"), std::bind(&AutoConnectCore<T>::_token_CSS_BASE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_TABLE"), std::bind(&AutoConnectCore<T>::_token_CSS_TABLE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("CSS_LUXBAR"), std::bind(&AutoConnectCore<T>::_token_CSS_LUXBAR, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_PRE"), std::bind(&AutoConnectCore<T>::_token_MENU_PRE, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_AUX"), std::bind(&AutoConnectCore<T>::_token_MENU_AUX, this, std::placeholders::_1));
+    elm->addToken(FPSTR("MENU_POST"), std::bind(&AutoConnectCore<T>::_token_MENU_POST, this, std::placeholders::_1));
+    elm->addToken(FPSTR("STATION_STATUS"), std::bind(&AutoConnectCore<T>::_token_STATION_STATUS, this, std::placeholders::_1));
   }
   else {
     delete elm;
@@ -1557,7 +1657,8 @@ PageElement* AutoConnect::_setupPage(String& uri) {
  *  when the AP_AUTHSCOPE_WITHCP is enabled.
  *  @param allow  Indication of whether to authenticate with the page.
  */ 
-void AutoConnect::_authentication(bool allow) {
+template<typename T>
+void AutoConnectCore<T>::_authentication(bool allow) {
   HTTPAuthMethod  method = _apConfig.auth == AC_AUTH_BASIC ? HTTPAuthMethod::BASIC_AUTH : HTTPAuthMethod::DIGEST_AUTH;
   _authentication(allow, method);
 }
@@ -1570,25 +1671,25 @@ void AutoConnect::_authentication(bool allow) {
  *  when the AP_AUTHSCOPE_WITHCP is enabled.
  *  @param allow  Indication of whether to authenticate with the page.
  */ 
-void AutoConnect::_authentication(bool allow, const HTTPAuthMethod method) {
+template<typename T>
+void AutoConnectCore<T>::_authentication(bool allow, const HTTPAuthMethod method) {
   const char* user = nullptr;
   const char* password = nullptr;
   String  fails;
 
   // Enable authentication by setting of AC_AUTHSCOPE_DISCONNECTED even if WiFi is not connected.
-  if (WiFi.status() != WL_CONNECTED && (WiFi.getMode() & WIFI_AP)) {
-    String  accUrl = _webServer->hostHeader();
-    if ((accUrl != WiFi.softAPIP().toString()) && !accUrl.endsWith(F(".local"))) {
-      if (!(_apConfig.authScope & AC_AUTHSCOPE_WITHCP))
-        allow = false;
-    }
-  }
+  String  accUrl = _webServer->hostHeader();
+
+  if (WiFi.status() != WL_CONNECTED)
+    allow = _apConfig.authScope & AC_AUTHSCOPE_WITHCP;
+  else if ((WiFi.getMode() & WIFI_AP) && ((accUrl == WiFi.softAPIP().toString()) || accUrl.endsWith(F(".local"))))
+    allow = _apConfig.authScope & AC_AUTHSCOPE_WITHCP;
 
   if (allow) {
     // Regiter authentication method
     user = _apConfig.username.length() ? _apConfig.username.c_str() : _apConfig.apid.c_str();
     password = _apConfig.password.length() ? _apConfig.password.c_str() : _apConfig.psk.c_str();
-    fails = String(FPSTR(AutoConnect::_ELM_HTML_HEAD)) + String(F("</head><body>" AUTOCONNECT_TEXT_AUTHFAILED "</body></html>"));
+    fails = String(FPSTR(AutoConnectCore<T>::_ELM_HTML_HEAD)) + String(F("</head><body>" AUTOCONNECT_TEXT_AUTHFAILED "</body></html>"));
     AC_DBG_DUMB(",%s+%s/%s", method == HTTPAuthMethod::BASIC_AUTH ? "BASIC" : "DIGEST", user, password);
   }
   _responsePage->authentication(user, password, method, AUTOCONNECT_AUTH_REALM, fails);

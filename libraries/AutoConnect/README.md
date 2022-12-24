@@ -2,7 +2,7 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/Hieromon/AutoConnect)](https://github.com/Hieromon/AutoConnect/releases)
 [![arduino-library-badge](https://www.ardu-badge.com/badge/AutoConnect.svg?)](https://www.ardu-badge.com/AutoConnect)
-[![Build Status](https://app.travis-ci.com/Hieromon/AutoConnect.svg?branch=master)](https://app.travis-ci.com/Hieromon/AutoConnect)
+[![Build Status](https://github.com/Hieromon/AutoConnect/actions/workflows/build.yml/badge.svg)](https://github.com/Hieromon/AutoConnect/actions/workflows/build.yml)
 [![License](https://img.shields.io/github/license/Hieromon/AutoConnect)](https://github.com/Hieromon/AutoConnect/blob/master/LICENSE)
 
 An Arduino library for ESP8266/ESP32 WLAN configuration at run time with web interface. 
@@ -85,7 +85,7 @@ Alter the platform applying the [arduino-esp32](https://github.com/espressif/ard
 
 Most simple approach to applying AutoConnect for the existing sketches, follow the below steps.
 
-<img src="mkdocs/images/beforeafter.png">
+<img src="mkdocs/images/beforeafter.jpg">
 
 ## More usages and Documentation
 
@@ -101,6 +101,45 @@ Full documentation is available on https://Hieromon.github.io/AutoConnect, some 
 - [FAQ](https://hieromon.github.io/AutoConnect/faq.html).
 
 ## Change log
+
+### [1.4.0] Nov. 20, 2022
+- Custom web page related features were decoupled to allow for two different configurations, AutoConnectCore and AutoConnect. AutoConnectCore reduces memory consumption by focusing only on WiFi connectivity utilities. See the chapter [Reducing Binary Size](https://hieromon.github.io/AutoConnect/basicusage.html#reducing-binary-size) in the documentation for more information.
+- Supports credentials backup and restoration.
+- Added an AutoConnect::getCurrentCredential function.
+- Added an AutoConnectAux::referer function.
+- Added an AutoConnectConfig::preserveIP setting.
+- Added the WebSocketServer example.
+- Allow navigate to a custom URL once a WiFi connection is established. (Discussions #523)
+- Revised mqttRSSI examples program structure.
+- Fixed updateserver.py script security vulnerability. (Issue #526)
+
+### [1.3.7] Aug. 20, 2022
+- Fixed an authentication failure in Captive Portal state. (Issue #518)
+- Fixed loss of current SSID.
+
+### [1.3.6] Jul. 26, 2022
+- Fixed OTA being incomplete. (Issue #325)
+
+### [1.3.5] Jun. 03, 2022
+- Fixed Fixed OTA exit not being called. (Issue #325)
+- Fixed an ambiguous type call with IPAddress. (Issue #480)
+- Fixed loss of response due to OTA session reset occurrence.
+- Made fit the mqttRSSI examples to ThingSpeak's updated channel authentication.
+
+### [1.3.4] Mar. 02, 2022
+- Supports [LittleFS_esp32](https://github.com/lorol/LITTLEFS) legacy library with ESP32 Arduino core 1.0.6 or less.
+- Added enablement of credentials removal function with Open SSIDs menu. (Discussions #433)
+- Fixed AutoConnectOTA crashing if there is no OTA partition.
+- Fixed AutoConnectUpdate crashing if there is no OTA partition.
+- Migrate the CI platform to GitHub actions.
+
+##### Breaking changes:
+- Authentication has been applied to **RESET** menu. This avoids resetting modules in an unauthenticated state by direct access to `/_ac/reset`.
+
+### [1.3.3] Jan. 25, 2022
+- Fixed the missing initialization of MQTT parameter settings of mqttRSSI.ino example sketch.
+- Reverted the MQTT API endpoint of Thingspeak.com in the mqttRSSI example sketches.
+- Changed ESP32Cam XCLK to be attenuated to avoid interference with WiFi signals.
 
 ### [1.3.2] Jan. 1, 2022
 
