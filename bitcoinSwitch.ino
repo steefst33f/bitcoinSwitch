@@ -416,7 +416,7 @@ void setup() {
     while(true) {
       portal.handleClient();
     }
-    // timer = 2000;
+    timer = 2000;
   }
   timer = timer + 200;
   delay(200);
@@ -437,18 +437,11 @@ void setup() {
   //start nfc scanner
   nfc.begin();
   isScanningForNfcTag = false;
-  delay(1000);
 }
 
 // loop
 void loop() {
-  while(WiFi.status() != WL_CONNECTED) {
-    connectionError();
-    Serial.println(F("Failed to connect"));
-    digitalWrite(highPin.toInt(), LOW);
-    printSwitchPinStatus();
-    delay(5000);
-  }
+  waitForWiFiConnectOrReboot();
 
   debugSerialPrintln("switchPin = " + highPin);
   debugSerialPrintln("switchOnTimeInMs = " + timePin);
@@ -480,7 +473,6 @@ void loop() {
     delay(timePin.toInt());
     dispense();
     digitalWrite(highPin.toInt(), LOW); 
-    delay(2000);
     paid = false;
   } else {
     debugSerialPrintln(F("When no LNURLp yet, create one flow..."));
@@ -489,12 +481,10 @@ void loop() {
     if(down) {
       errorScreen();
       getInvoice("BitcoinSwitch");
-      delay(5000);
     }
 
     if(payReq != "") {
       qrdisplayScreen(payReq);
-      delay(5000);
     }
 
     while(paid == false && payReq != "") {
@@ -506,13 +496,13 @@ void loop() {
         dispense();
         digitalWrite(highPin.toInt(), LOW); 
         printSwitchPinStatus();
+      } else {
+        delay(2000);
       }
-      delay(2000);
     }
     payReq = "";
     dataId = "";
     paid = false;
-    delay(4000);
   }
 }
 
@@ -640,6 +630,7 @@ void checkBalance() {
   if(!client.connect(lnbitsserver, 443)) {
     debugSerialPrintln("Client couldn't connect to " + String(lnbitsserver) + " to check Balance");
     down = true;
+    WiFi.printDiag(Serial);
     return;   
   }
 
@@ -961,6 +952,28 @@ String convertToStringFromBytes(byte dataArray[], int sizeOfArray) {
   return stringOfData;
 }
 
+/**
+ * Wait for WiFi connection, and, if not connected, reboot
+ */
+void waitForWiFiConnectOrReboot() {
+  uint32_t notConnectedCounter = 0;
+  while (WiFi.status() != WL_CONNECTED) {
+      delay(100);
+      debugSerialPrintln("Wifi connecting...");
+      debugSerialPrintln("Try number: " + String(notConnectedCounter));
+
+
+      notConnectedCounter++;
+      if(notConnectedCounter > 150) { // Reset board if not connected after 5s
+        debugSerialPrintln("Resetting due to Wifi not connecting...");
+        ESP.restart();
+      }
+  }
+  // Print wifi IP addess
+  debugSerialPrintln("IP address: ");
+  debugSerialPrintln(String(WiFi.localIP()));
+}
+
 /////////////////Serial Print //////////////
 void debugSerialPrintln(const String &string) {
   #if DEBUG == 1
@@ -973,3 +986,4 @@ void printSwitchPinStatus() {
   debugSerialPrintln("State of switch-pin: "+ highPin + " = " + String(highPinState));
   debugSerialPrintln("Switch ON time configuration = " + timePin + " ms");
 }
+
