@@ -48,8 +48,8 @@ bool format = false; // true for formatting SPIFFS, use once, then make false an
 int portalPin = 2;
 int servoPin = 15;
 int vendorPin = 33;
-int fillDispencerButton = 26;
-int emptyDispencerButton = 27;
+int fillDispencerButton = 27;
+int emptyDispencerButton = 26;
 /////////////////////////////////
 /////////////////////////////////
 /////////////////////////////////
@@ -283,7 +283,7 @@ void setup() {
       }
 
       Serial.println("vendorPin: " + String(touchRead(vendorPin)));
-      if(touchRead(vendorPin) < 60) {
+      if(touchRead(vendorPin) < 50) {
         Serial.println(F("In Vendor Fill/Empty mode"));
         Serial.println(F("(Restart Vending Machine to exit)"));
         vendorMode();
@@ -351,7 +351,7 @@ void setup() {
     triggerAp = true;
   }
   paramFile.close();
-
+  
   //start server
   server.on("/", []() {
     content += AUTOCONNECT_LINK(COG_24);
@@ -928,29 +928,27 @@ bool withdraw(String callback, String k1, String pr) {
 //////// Servo ///////
 void dispense() {
   debugSerialPrintln(F("Vending Machine dispense START!"));
-  servo.writeMicroseconds(2000); // rotate
-  delay(950);
-  servo.writeMicroseconds(1500);  // stop
+  servo.writeMicroseconds(1000); // rotate clockwise (from the buyers point of view)
+  delay(1920);
+  servo.writeMicroseconds(1500);  // stop ✓
   debugSerialPrintln(F("Vending Machine dispense STOP!!"));
+}
+
+void fillDispenser() {
+  debugSerialPrintln(F("Fill dispenser!!"));
+  // let dispencer slowly turn in the fillup direction, so the vender can empty the dispendser with new products:
+  servo.writeMicroseconds(2000); // rotate counter clockwise (from the buyers point of view)
+  delay(1590);
+  servo.writeMicroseconds(1500);  // stop
+  debugSerialPrintln(F("Done!"));
 }
 
 void emptyDispenser() {
   debugSerialPrintln(F("Empty dispenser!!"));
   // let dispencer slowly turn in dispence direction, so the vender can empty all products from dispenser:
-  servo.writeMicroseconds(1700); // rotate clockwise (from the buyers point of view)
-  delay(5000);
-  servo.writeMicroseconds(1500);  // stop
-  delay(1000);
-  debugSerialPrintln(F("Done!"));
-}
-
-void fillDispenser() {
-  debugSerialPrintln(F("Fill dispenser!!"));
-  // let dispencer slowly turn in the fillup direction, so the vender can fill the dispendser with new products:
-  servo.writeMicroseconds(1300); // rotate counter cockwise (from the buyers point of view)
-  delay(5000);
-  servo.writeMicroseconds(1500);  // stop
-  delay(1000);
+  servo.writeMicroseconds(1000); // rotate clockwise (from the buyers point of view)
+  delay(1920);
+  servo.writeMicroseconds(1500);  // stop ✓
   debugSerialPrintln(F("Done!"));
 }
 
