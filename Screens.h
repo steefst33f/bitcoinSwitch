@@ -30,7 +30,7 @@
    }
 
    void logoScreen() {
-      #if defined(M5STACK)
+      #if defined(M5STACK) || defined(ILI9431_240x320)
          setDisplayText("bitcoinSwitch", PURPLE, WHITE, 4, 0, 80);
       #elif defined(TTGO)
          setDisplayText("bitcoinSwitch", PURPLE, WHITE, 2, 0, 70);
@@ -38,7 +38,7 @@
    }
 
    void portalLaunched() {
-      #if defined(M5STACK)
+      #if defined(M5STACK) || defined(ILI9431_240x320)
          setDisplayText("PORTAL LAUNCH", PURPLE, WHITE, 4, 0, 80);
       #elif defined(TTGO)
          setDisplayText("PORTAL LAUNCH", PURPLE, WHITE, 2, 0, 70);
@@ -46,7 +46,7 @@
    }
 
    void vendorMode() {
-      #if defined(M5STACK)
+      #if defined(M5STACK) || defined(ILI9431_240x320)
          setDisplayText("VENDOR REFILL MODE", PURPLE, WHITE, 4, 0, 80);
       #elif defined(TTGO)
          setDisplayText("VENDOR REFILL MODE", PURPLE, WHITE, 2, 0, 70);
@@ -54,7 +54,7 @@
    }
 
    void processingScreen() {
-      #if defined(M5STACK)
+      #if defined(M5STACK) || defined(ILI9431_240x320)
          setDisplayText("PORTAL LAUNCH", PURPLE, WHITE, 4, 0, 80);
       #elif defined(TTGO)
          setDisplayText("PORTAL LAUNCH", PURPLE, WHITE, 2, 0, 70);
@@ -62,7 +62,7 @@
    }
 
    void lnbitsScreen() {
-      #if defined(M5STACK)
+      #if defined(M5STACK) || defined(ILI9431_240x320)
          setDisplayText("POWERED BY LNBITS", WHITE, BLACK, 3, 10, 90);
       #elif defined(TTGO)
          setDisplayText("POWERED BY LNBITS", WHITE, BLACK, 2, 10, 90);
@@ -70,7 +70,7 @@
    }
 
    void portalScreen() {
-      #if defined(M5STACK)
+      #if defined(M5STACK) || defined(ILI9431_240x320)
          setDisplayText("PORTAL LAUNCHED", BLACK, WHITE, 3, 30, 80);
       #elif defined(TTGO)
          setDisplayText("PORTAL LAUNCHED", BLACK, WHITE, 2, 30, 80);
@@ -78,7 +78,7 @@
    }
 
    void paidScreen() {
-      #if defined(M5STACK)
+      #if defined(M5STACK) || defined(ILI9431_240x320)
          setDisplayText("PAID", BLACK, GREEN, 4, 110, 80);
       #elif defined(TTGO)
          setDisplayText("PAID", BLACK, GREEN, 3, 110, 80);
@@ -86,7 +86,7 @@
    }
 
    void completeScreen() {
-      #if defined(M5STACK)
+      #if defined(M5STACK) || defined(ILI9431_240x320)
          setDisplayText("COMPLETE", BLACK, WHITE, 4, 60, 80);
       #elif defined(TTGO)
          setDisplayText("COMPLETE", BLACK, WHITE, 2, 60, 80);
@@ -100,7 +100,9 @@
    }
 
    void qrdisplayScreen(String qrCodeData) {
-      #ifdef TFT_DISPLAY 
+     #if defined(M5STACK) || defined(ILI9431_240x320)
+         displayQrCode(qrCodeData, 3, 10);
+      #elif defined(TTGO)
          displayQrCode(qrCodeData, 2, 10);
       #endif
    }

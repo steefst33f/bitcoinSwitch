@@ -5,10 +5,15 @@
 #ifndef DisplayHandler_h
   #define DisplayHandler_h
   
-  //  #define M5STACK // comment out if not using M5Stack
-  #define TTGO // comment out if not using TTGO
+  // #define M5STACK // comment out if not using M5Stack
+  // #define TTGO // comment out if not using TTGO
+  #define ILI9431_240x320 // comment out if not using ILI9431 240x320
 
-  #if defined(M5STACK) || defined(TTGO)
+  #ifdef ILI9431_240x320
+    #define TFT_BL 13
+  #endif
+
+  #if defined(M5STACK) || defined(TTGO) || defined(ILI9431_240x320)
     #define TFT_DISPLAY
   #endif
   

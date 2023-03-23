@@ -71,7 +71,7 @@ void setDisplayErrorText(String text) {
   #if defined(M5STACK)
       setDisplayText(text, RED, WHITE, 3, 0, 80);
   #elif defined(TTGO)
-      setDisplayText(text, RED, WHITE, 2, 0, 70);
+      setDisplayText(text, RED, WHITE, 2, 0, 70);      
   #endif 
 }
 
