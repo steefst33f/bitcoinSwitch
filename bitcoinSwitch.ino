@@ -43,12 +43,12 @@ using WebServerClass = WebServer;
 ///////////CHANGE////////////////
 /////////////////////////////////
 
-/* comment out #define M5STACK in DisplayHelpers.h if you don't use the M5Stack */        
+/* comment out the define for the display your using in DisplayHanler.h */        
 bool format = false; // true for formatting SPIFFS, use once, then make false and reflash
-int portalPin = 2;
-int servoPin = 15;
+int portalPin = 32;
+int servoPin = 27;
 int vendorPin = 33;
-int fillDispencerButton = 27;
+int fillDispencerButton = 25;
 int emptyDispencerButton = 26;
 /////////////////////////////////
 /////////////////////////////////
@@ -275,7 +275,7 @@ void setup() {
       digitalWrite(2, HIGH);
     #else
       Serial.println("portalPin: " + String(touchRead(portalPin)));
-      if(touchRead(portalPin) < 60) {
+      if(touchRead(portalPin) < 30) {
         Serial.println(F("Launch portal"));
         portalLaunched();
         triggerAp = true;
@@ -958,13 +958,13 @@ String convertToStringFromBytes(byte dataArray[], int sizeOfArray) {
 void waitForWiFiConnectOrReboot() {
   uint32_t notConnectedCounter = 0;
   while (WiFi.status() != WL_CONNECTED) {
-      delay(100);
+      delay(1000);
       debugSerialPrintln("Wifi connecting...");
       debugSerialPrintln("Try number: " + String(notConnectedCounter));
 
 
       notConnectedCounter++;
-      if(notConnectedCounter > 150) { // Reset board if not connected after 5s
+      if(notConnectedCounter > 10) { // Reset board if not connected after 5s
         debugSerialPrintln("Resetting due to Wifi not connecting...");
         ESP.restart();
       }
