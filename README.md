@@ -34,7 +34,7 @@ This little DIY Sticker Vending Machine is based on [Ben Arcs](https://github.co
 ### Setup:
 1. Download the files from this github repository onto your computer.
 2. Open the VendingMachine.ino sketch file in your Arduino IDE. 
-3. Drag and drop all the libraries found in the libraries folder from the repository into your own Arduino Library folder on your computer
+3. Drag and drop all the libraries found in the libraries folder from the repository into your own Arduino Library folder on your computer ((used libraries)[])
 5. Select the esp32 dev module as your board in the board manager.
 6. Connect your esp32 dev module with a usb cable to your computer.
 7. Compile the sketch.ino, continue if it succeeds. If its doesn’t succeed try these tips: [troubleshoot esp32](/docs/tips.md)
