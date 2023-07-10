@@ -29,7 +29,7 @@ This little DIY Sticker Vending Machine is based on [Ben Arcs](https://github.co
 - Scissors
 - Flashlight (or something else that sturdy and tube shaped so you can use it to form the wire in shape)
 - (Duck-)tape/glue
-- Arduino IDE
+- Arduino IDE ([installation steps for Mac M1](docs/Arduino%20Install%20Steps%20M1.md))
 
 ### Setup:
 1. Download the files from this github repository onto your computer.
