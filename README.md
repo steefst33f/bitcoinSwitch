@@ -2,6 +2,8 @@
 
 [![DIY vending machine demo](https://twitter.com/arcbtc/status/1581186711668678657)](https://twitter.com/arcbtc/status/1581186711668678657)
 
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">I think this itsy bitsy completely DIY card sticker vending machine (based on <a href="https://twitter.com/hashtag/bitcoinSwitch?src=hash&amp;ref_src=twsrc%5Etfw">#bitcoinSwitch</a>, but with nfc!), by <a href="https://twitter.com/steefbtc?ref_src=twsrc%5Etfw">@steefbtc</a>, is my current favorite thing 🤗 <a href="https://t.co/L7dni3Z1Vf">pic.twitter.com/L7dni3Z1Vf</a></p>&mdash; Ben Arc 🏴󠁧󠁢󠁷󠁬󠁳󠁿✊⚡️ (@arcbtc) <a href="https://twitter.com/arcbtc/status/1581186711668678657?ref_src=twsrc%5Etfw">October 15, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
 ## This is a proof of concept of a Vending Machine that accept Bitcoin Lightning payments (with NFC). 
 
 <br>
@@ -10,7 +12,7 @@
 
 This little DIY Sticker Vending Machine is based on [Ben Arcs](https://github.com/arcbtc) [BitcoinSwitch](https://youtu.be/FeoIwTjv3YM) (github project: [BitcoinSwitch](https://github.com/arcbtc/bitcoinSwitch)) and accepts Bitcoin Lightning payments in return for stickers. ;)
 
-<p>You can pay for a sticker by scanning the QRCode on the display with your favourite lightning wallet app or tap to the NFC module with a NFC tag or card that contains a LNURL withdrawal link.</p>
+<p>You can pay for a sticker by scanning the QRCode on the display with your favourite lightning wallet app or tap to the NFC module with a NFC type 2 tag or card that contains a LNURL withdrawal link. (Note: Doesn't work with NTAG 424 DNA (Boltcards) yet!!)</p>
 
 <p>The Vending Machine will poll (check every x seconds) if a payment has been received.  When a confirmation of payment is received, the Vending Machine will activate the Sticker dispenser and a sticker will be pushed out of the Vending Machine. Customer happy, Vending Machine happy!<br></p>
 
