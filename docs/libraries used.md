@@ -1,4 +1,4 @@
-# Libraries used for the DIY Vending Machine NFC:
+# Libraries used:
 
 * AutoConnect (1.3.7)
 * ArduinoJson (6.19.4)
@@ -18,5 +18,6 @@
 * NfcAdapter(download from the link Don's NDEF library: https://github.com/don/NDEF)
 * TFT_eSPI (2.4.79) (https://github.com/Bodmer/TFT_eSPI, get latest from master)
 * QRcode(0.0.1)(https://github.com/ricmoo/QRCode)
+* ESP32Servo (https://github.com/jkb-git/ESP32Servo.git)
 
 
